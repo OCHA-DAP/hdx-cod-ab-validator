@@ -17,8 +17,13 @@ This repository includes an [`llms.txt`](llms.txt) file — a machine-readable i
 
 To interactively validate a COD-AB dataset:
 
-1. Open a conversation with an LLM that can fetch URLs or read files (e.g. Claude, ChatGPT with browsing, or any tool that supports `llms.txt`).
-2. Point the LLM at `llms.txt` in this repo, or directly fetch [`validator.md`](validator.md).
+1. Open a conversation with an LLM that supports URL fetching (e.g. Claude, ChatGPT with browsing).
+2. Paste this message into the chat:
+
+   ```
+   Please fetch https://raw.githubusercontent.com/OCHA-DAP/hdx-cod-ab-specification/main/validator.md and follow the instructions there to validate my COD-AB dataset.
+   ```
+
 3. Follow the guided prompts to check your dataset against the spec.
 
-[`validator.md`](validator.md) is a self-contained prompt — you can paste it directly into a chat session without needing the LLM to fetch anything.
+Alternatively, open [`validator.md`](validator.md) and paste its contents directly into a chat session — no URL fetching needed.
