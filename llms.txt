@@ -4,7 +4,7 @@
 
 To interactively validate a dataset against this specification, fetch the validator prompt and follow its instructions:
 
-- [validator.md](validator.md): Self-contained validation prompt. Fetch this file, then follow the instructions to begin a guided validation session with your data.
+- [validator.md](validator.md): Validation prompt. Fetch this file, then follow the instructions to begin a guided validation session with your data.
 
 ## Specification files
 
