@@ -14,3 +14,4 @@ To interactively validate a dataset against this specification, fetch the valida
 - [specs/boundaries/attributes.md](specs/boundaries/attributes.md): Date, computed, and identifier column schema
 - [specs/file-structure.md](specs/file-structure.md): Directory and file naming conventions, CRS requirements
 - [specs/metadata.md](specs/metadata.md): Metadata registry table schema
+- [specs/supplementary-layers.md](specs/supplementary-layers.md): Supplementary layers (admin lines and disputed areas)
