@@ -160,13 +160,22 @@ For each level L (0 ≤ L ≤ N):
 | -------------- | ------ | ---------- | ------------------------------------------------- |
 | `adm{L}_pcode` | string | 20         | Place code for the administrative unit at level L |
 
-P-codes (place codes) are alphanumeric strings that uniquely identify an administrative unit. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0. All p-codes in a column MUST be unique within the file (no duplicates at the same level). P-codes MUST be alphanumeric only (letters and digits, no spaces or special characters).
+P-codes (place codes) are alphanumeric strings identifying administrative units. They are semantic identifiers optimised for human readability: the country code and hierarchical structure are visible in the code itself. Each administrative unit MUST have exactly one P-code. P-codes MUST be unique within their administrative level. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0. P-codes MUST be alphanumeric only (letters and digits, no spaces or special characters).
 
-The admin 0 p-code (`adm0_pcode`) SHOULD equal the country's [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code (e.g., `AF` for Afghanistan).
+Because P-codes encode geographic hierarchy, they are not designed as globally stable machine identifiers: a P-code is only guaranteed unique within a given dataset version. Global stability requires an opaque identifier assigned once and never changed regardless of boundary changes or P-code resets — for example, a UUID (`7f3a9b2c-4d5e-4f6a-8b9c-0d1e2f3a4b5c`) or a centrally-issued integer (`42817`). Such an identifier is not a P-code.
+
+The admin 0 p-code (`adm0_pcode`) SHOULD equal the country's [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code (e.g., `AF` for Afghanistan). Some older datasets use the [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) code instead (e.g., `BDI` for Burundi); this is a legacy variant that validators MUST accept but SHOULD warn about.
 
 ##### Relationship to Government Codes
 
-P-codes SHOULD be derived from official government codes where they exist. Government codes are typically zero-padded numeric strings (e.g., `01`, `02`). The ISO 3166-1 alpha-2 country code is prepended to form the p-code (e.g., `AF01`, `AF02`). P-codes MUST be typed as strings to preserve leading zeros that would be lost if treated as integers. The government's existing digit width and padding MUST be reproduced exactly.
+P-codes SHOULD be derived from official government codes where they exist. Government codes are typically zero-padded numeric strings; these are appended to the ISO alpha-2 country code to form the P-code. P-codes MUST be typed as strings to preserve leading zeros that would be lost if treated as integers. The government's existing digit width and padding MUST be reproduced exactly.
+
+Examples from well-documented systems:
+
+- **[US FIPS](https://www2.census.gov/programs-surveys/decennial/2010/partners/pdf/FIPS_StateCounty_Code.pdf)** (United States Census Bureau): States have 2-digit FIPS codes and counties have 3-digit codes within each state. California is `06`; Los Angeles County is `037` within California. The resulting P-codes are `US06` (admin 1) and `US06037` (admin 2).
+- **[DIVIPOLA](https://www.datos.gov.co/api/views/gdxc-w37w/rows.pdf?accessType=DOWNLOAD)** (Colombia, DANE): Departments have 2-digit codes and municipalities have 3-digit codes within each department. Antioquia is `05`; Medellín is `001` within Antioquia. The resulting P-codes are `CO05` (admin 1) and `CO05001` (admin 2).
+- **[IEBC county codes](https://www.iebc.or.ke/uploads/resources/LQei86kCJV.pdf)** (Kenya): Counties are numbered 001–047. The resulting P-codes are `KE001` (Mombasa County, admin 1) and `KE047` (Nairobi City County, admin 1).
+- **[INEC LGA codes](https://www.inecnigeria.org/wp-content/uploads/2019/02/RA-LGA-ANALYSIS-NATIONWIDE.pdf)** (Nigeria): States are numbered 01–37; LGAs within each state are numbered 01–NN (2 digits, as no state has more than 44 LGAs). Borno State is `08`; its 27 LGAs run from `01` (Abadam) to `27` (Shani), with Maiduguri at `21`. The resulting P-codes are `NG08` (Borno State, admin 1) and `NG0821` (Maiduguri LGA, admin 2).
 
 ##### Fallback When No Government Codes Exist
 
@@ -181,11 +190,13 @@ For example, Uganda (`UG`) has 4 administrative regions at admin 1, and the maxi
 | Admin 3     | Sub-counties | 20                   | 2           | `UG10101`, `UG10102`, … `UG44020`       |
 | Admin 4     | Parishes     | 15                   | 2           | `UG1010101`, `UG1010102`, … `UG4402015` |
 
-Each level's digit width is set independently by the largest sibling group at that level, not the total count across all parents. Admin 3 and admin 4 both use two digits here because no parent at either level contains more than 99 child units.
+Admin 3 and admin 4 both use two digits here because no parent at either level contains more than 99 child units.
 
 ##### Continuity Across Versions
 
-P-codes SHOULD maintain continuity with the previous dataset version so that codes remain stable across updates. Continuity MAY not be achievable when the government introduces a substantially new boundary system, in which case the p-codes SHOULD follow the new government codes.
+P-codes SHOULD remain stable across dataset versions. When a government introduces a substantially new boundary system, p-codes SHOULD follow the new system even if continuity is broken. A retired P-code SHOULD NOT be reused for a different administrative unit.
+
+Continuity SHOULD also be broken when a restructuring changes the number of units enough that preserving old codes would produce over-engineered results. For example, Uganda previously had 128 administrative level 1 districts with codes like `UG101` and `UG432`; after restructuring to a small number of regions, forcing continuity would produce codes like `UG001` or `UG100` rather than the clean `UG1`, `UG2` that the digit-width rule would naturally yield. In such cases the p-code system SHOULD be reset.
 
 ---
 
