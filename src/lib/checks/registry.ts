@@ -1,4 +1,5 @@
 import { checkVersions } from "./check_versions.ts";
+import { checkDates } from "./check_dates.ts";
 import type { Check } from "./types.ts";
 
 /**
@@ -9,4 +10,4 @@ import type { Check } from "./types.ts";
  *   2. Import it here and add it to this array
  *   Nothing else needs to change.
  */
-export const checks: Check[] = [checkVersions];
+export const checks: Check[] = [checkVersions, checkDates];

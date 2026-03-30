@@ -27,7 +27,7 @@
     {#each checks as check}
       {@const r = fileResult.checks[check.name]}
       {#if r && (r.violations.length || r.warnings.length || r.info.length)}
-        <details open={!r.passed}>
+        <details open={!r.passed || r.warnings.length > 0}>
           <summary class="check-summary">
             <span class="check-label">{check.label}</span>
             <span class="spec-ref">spec: {check.specSection}</span>

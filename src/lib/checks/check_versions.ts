@@ -1,19 +1,8 @@
 import type { AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { Check, CheckResult } from "./types.ts";
+import { queryColumnStats } from "./helpers.ts";
 
 const VERSION_RE = String.raw`^v\d{2}(\.\d{2})?$`;
-
-function buildSql(col: string): string {
-  return `
-SELECT
-    COUNT(DISTINCT "${col}")                                          AS distinct_count,
-    list(DISTINCT "${col}"::VARCHAR ORDER BY 1)                       AS distinct_values,
-    list(DISTINCT "${col}"::VARCHAR)
-        FILTER (WHERE "${col}" IS NOT NULL
-                  AND NOT regexp_full_match("${col}"::VARCHAR, $1))   AS bad_format
-FROM data
-  `.trim();
-}
 
 async function run(
   conn: AsyncDuckDBConnection,
@@ -35,7 +24,7 @@ async function run(
 
   let col: string;
   if (hasCodVersion && !hasVersion) {
-    info.push(
+    warnings.push(
       "Dataset uses `cod_version` instead of `version` — this is a known deviation " +
         "in older datasets and SHOULD be updated to `version` when the dataset is revised.",
     );
@@ -44,17 +33,11 @@ async function run(
     col = "version";
   }
 
-  const stmt = await conn.prepare(buildSql(col));
-  const result = await stmt.query(VERSION_RE);
-  await stmt.close();
-
-  const row = result.toArray()[0];
-  const distinctCount = Number(row.distinct_count);
-  // Arrow list columns may contain BigInt values (e.g. when the source column is
-  // an integer type). Array.from + .map(String) converts them to plain strings at
-  // runtime so JSON.stringify on the resulting arrays is always safe.
-  const distinctValues = Array.from(row.distinct_values ?? []).map(String);
-  const badFormat = Array.from(row.bad_format ?? []).map(String);
+  const { distinctCount, distinctValues, badFormat } = await queryColumnStats(
+    conn,
+    col,
+    VERSION_RE,
+  );
 
   if (distinctCount === 0) {
     violations.push(`\`${col}\` column is entirely null.`);
@@ -71,7 +54,7 @@ async function run(
 
   for (const v of badFormat) {
     if (col === "cod_version") {
-      info.push(
+      warnings.push(
         `\`cod_version\` value "${v}" does not match the current format ` +
           "(e.g. `v01` or `v02.01`). This is expected for legacy datasets.",
       );
