@@ -20,8 +20,20 @@ Ask the user to confirm they are submitting an **admin boundary layer** (e.g. `a
 **Step 2 — Collect the data.**
 Ask the user to either:
 
-- Upload the file (CSV, Excel, GeoPackage attribute table, etc.), or
+- Upload the file (CSV, Excel, GeoJSON, GeoPackage, Shapefile, etc.), or
 - Paste a sample (header row + at least 5–10 data rows)
+
+**Handling geometry files:**
+
+- **GeoJSON**: Read only the `properties` object from each feature. Do NOT read or process the `geometry` field — coordinates are not needed for attribute validation and are very expensive to process.
+- **GeoPackage / Shapefile**: Use GeoPandas (or equivalent) to load the file and extract the attribute table, dropping the geometry column before bringing any data into context:
+
+```python
+import geopandas as gpd
+gdf = gpd.read_file("file.gpkg")
+df = gdf.drop(columns="geometry")
+print(df.to_csv(index=False))
+```
 
 If they paste a sample, note that checks requiring full-dataset uniqueness (e.g. p-code duplicates) can only be confirmed on the complete file.
 
