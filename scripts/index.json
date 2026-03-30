@@ -20,5 +20,27 @@
       {"name": "file", "description": "Path to the boundary file (any pandas/geopandas-compatible format: .gpkg, .geojson, .csv, .parquet, .xlsx, etc.)"}
     ],
     "output": "JSON: {passed, violations, warnings, info}"
+  },
+  {
+    "name": "check_pcode_format",
+    "script": "scripts/check_pcode_format.py",
+    "spec_section": "Codes § P-Code Format",
+    "description": "Validates the format, nulls, length, and uniqueness of each adm{L}_pcode column in a COD-AB boundary file.",
+    "applies_to": ["admin"],
+    "args": [
+      {"name": "file", "description": "Path to the boundary file (any pandas/geopandas-compatible format: .gpkg, .geojson, .csv, .parquet, .xlsx, etc.)"}
+    ],
+    "output": "JSON: {passed, violations, warnings, info}"
+  },
+  {
+    "name": "check_pcode_hierarchy",
+    "script": "scripts/check_pcode_hierarchy.py",
+    "spec_section": "Codes § Uniqueness and Hierarchy",
+    "description": "Validates that each adm{L}_pcode starts with its parent adm{L-1}_pcode across all rows of a COD-AB boundary file.",
+    "applies_to": ["admin"],
+    "args": [
+      {"name": "file", "description": "Path to the boundary file (any pandas/geopandas-compatible format: .gpkg, .geojson, .csv, .parquet, .xlsx, etc.)"}
+    ],
+    "output": "JSON: {passed, violations, warnings, info}"
   }
 ]
