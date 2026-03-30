@@ -50,8 +50,11 @@ async function run(
 
   const row = result.toArray()[0];
   const distinctCount = Number(row.distinct_count);
-  const distinctValues: string[] = row.distinct_values ?? [];
-  const badFormat: string[] = row.bad_format ?? [];
+  // Arrow list columns may contain BigInt values (e.g. when the source column is
+  // an integer type). Array.from + .map(String) converts them to plain strings at
+  // runtime so JSON.stringify on the resulting arrays is always safe.
+  const distinctValues = Array.from(row.distinct_values ?? []).map(String);
+  const badFormat = Array.from(row.bad_format ?? []).map(String);
 
   if (distinctCount === 0) {
     violations.push(`\`${col}\` column is entirely null.`);
@@ -59,8 +62,9 @@ async function run(
   }
 
   if (distinctCount > 1) {
+    const listed = distinctValues.map((v) => `"${v}"`).join(", ");
     violations.push(
-      `\`${col}\` has multiple distinct values: ${JSON.stringify(distinctValues)}. ` +
+      `\`${col}\` has multiple distinct values: [${listed}]. ` +
         "All rows in a layer MUST share the same version.",
     );
   }
@@ -68,12 +72,12 @@ async function run(
   for (const v of badFormat) {
     if (col === "cod_version") {
       info.push(
-        `\`cod_version\` value ${JSON.stringify(v)} does not match the current format ` +
+        `\`cod_version\` value "${v}" does not match the current format ` +
           "(e.g. `v01` or `v02.01`). This is expected for legacy datasets.",
       );
     } else {
       violations.push(
-        `\`version\` value ${JSON.stringify(v)} does not match the required format. ` +
+        `\`version\` value "${v}" does not match the required format. ` +
           "Must be `v{NN}` (e.g. `v01`) or `v{NN}.{NN}` (e.g. `v02.01`), " +
           "with zero-padded two-digit components.",
       );

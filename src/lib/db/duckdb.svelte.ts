@@ -28,7 +28,17 @@ export async function initDuckDB(): Promise<void> {
     URL.revokeObjectURL(workerUrl);
 
     duckdbState.db = instance;
-    duckdbState.conn = await instance.connect();
+    const conn = await instance.connect();
+    duckdbState.conn = conn;
+
+    // Load the spatial extension for GeoPackage and File Geodatabase support.
+    // Failure is non-fatal — errors surface only when validating those formats.
+    try {
+      await conn.query("INSTALL spatial; LOAD spatial;");
+    } catch {
+      console.warn("DuckDB spatial extension unavailable — GeoPackage and File Geodatabase support disabled.");
+    }
+
     duckdbState.ready = true;
   } catch (e) {
     duckdbState.initError = e instanceof Error ? e.message : String(e);

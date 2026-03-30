@@ -28,7 +28,7 @@
     class:has-issues={!allPassed}
   >
     {result.files.length}
-    {result.files.length === 1 ? "file" : "files"} checked &nbsp;·&nbsp;
+    {result.files.length === 1 ? "layer" : "layers"} checked &nbsp;·&nbsp;
     {totalViolations}
     {totalViolations === 1 ? "violation" : "violations"}
     {#if allPassed}
