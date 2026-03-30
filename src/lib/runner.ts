@@ -43,13 +43,13 @@ function groupFiles(files: File[]): {
   individualFiles: File[];
 } {
   const shpGroups = new Map<string, File[]>();
+  const shpStems = new Set<string>(); // stems that have a .shp file
   const individualFiles: File[] = [];
 
   for (const file of files) {
-    const relPath =
-      (file as File & { webkitRelativePath: string }).webkitRelativePath || "";
-
-    const fullPath = relPath || file.name;
+    const fullPath =
+      (file as File & { webkitRelativePath: string }).webkitRelativePath ||
+      file.name;
     const dotIdx = fullPath.lastIndexOf(".");
     if (dotIdx !== -1) {
       const ext = fullPath.slice(dotIdx).toLowerCase();
@@ -57,28 +57,68 @@ function groupFiles(files: File[]): {
         const stem = fullPath.slice(0, dotIdx).toLowerCase();
         if (!shpGroups.has(stem)) shpGroups.set(stem, []);
         shpGroups.get(stem)!.push(file);
+        if (ext === ".shp") shpStems.add(stem);
         continue;
       }
     }
-
     individualFiles.push(file);
   }
 
   // Drop shapefile groups that have no .shp file; treat their files as individuals
   for (const [stem, groupFiles] of shpGroups) {
-    const hasShp = groupFiles.some((f) => {
-      const p =
-        (f as File & { webkitRelativePath: string }).webkitRelativePath ||
-        f.name;
-      return p.toLowerCase().endsWith(".shp");
-    });
-    if (!hasShp) {
+    if (!shpStems.has(stem)) {
       individualFiles.push(...groupFiles);
       shpGroups.delete(stem);
     }
   }
 
   return { shpGroups, individualFiles };
+}
+
+async function processLayers(
+  filePath: string,
+  conn: AsyncDuckDBConnection,
+): Promise<FileResult[]> {
+  let layers: string[];
+  try {
+    layers = await listSpatialLayers(filePath, conn);
+  } catch (e) {
+    return [
+      {
+        fileName: filePath,
+        loadError: e instanceof Error ? e.message : String(e),
+        checks: {},
+      },
+    ];
+  }
+
+  if (layers.length === 0) {
+    return [
+      {
+        fileName: filePath,
+        loadError: `No layers found — format may not be supported in this browser.`,
+        checks: {},
+      },
+    ];
+  }
+
+  const results: FileResult[] = [];
+  for (const layerName of layers) {
+    const fileResult: FileResult = {
+      fileName: `${filePath}::${layerName}`,
+      loadError: null,
+      checks: {},
+    };
+    try {
+      const { columns } = await loadSpatialLayer(filePath, layerName, conn);
+      fileResult.checks = await runChecks(conn, columns);
+    } catch (e) {
+      fileResult.loadError =
+        "[load] " + (e instanceof Error ? e.message : String(e));
+    }
+    results.push(fileResult);
+  }
+  return results;
 }
 
 /**
@@ -95,8 +135,8 @@ export async function runValidation(
   const { shpGroups, individualFiles } = groupFiles(files);
 
   // ── Individual files ──────────────────────────────────────────────────────
-  // Parquet and GeoJSON are loaded natively; everything else goes through
-  // ST_Read so any GDAL-supported format works automatically.
+  // Parquet and GeoJSON are loaded natively for speed; everything else goes
+  // through ST_Read so any GDAL-supported format works automatically.
 
   for (const file of individualFiles) {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -137,53 +177,15 @@ export async function runValidation(
     // Multi-layer files (e.g. GeoPackage) produce one FileResult per layer.
     const buffer = new Uint8Array(await file.arrayBuffer());
     await db.registerFileBuffer(file.name, buffer);
-
-    let layers: string[];
-    try {
-      layers = await listSpatialLayers(file.name, conn);
-    } catch (e) {
-      results.push({
-        fileName: file.name,
-        loadError: e instanceof Error ? e.message : String(e),
-        checks: {},
-      });
-      continue;
-    }
-
-    if (layers.length === 0) {
-      results.push({
-        fileName: file.name,
-        loadError: `No layers found — format may not be supported in this browser.`,
-        checks: {},
-      });
-      continue;
-    }
-
-    for (const layerName of layers) {
-      const fileResult: FileResult = {
-        fileName: `${file.name}::${layerName}`,
-        loadError: null,
-        checks: {},
-      };
-      try {
-        const { columns } = await loadSpatialLayer(file.name, layerName, conn);
-        fileResult.checks = await runChecks(conn, columns);
-      } catch (e) {
-        fileResult.loadError =
-          "[load] " + (e instanceof Error ? e.message : String(e));
-      }
-      results.push(fileResult);
-    }
+    results.push(...(await processLayers(file.name, conn)));
   }
 
   // ── Shapefiles ────────────────────────────────────────────────────────────
 
   for (const [, shpFiles] of shpGroups) {
     let shpPath: string;
-    let layers: string[];
     try {
       shpPath = await registerShapefileFiles(shpFiles, db);
-      layers = await listSpatialLayers(shpPath, conn);
     } catch (e) {
       const name =
         shpFiles.find((f) => f.name.toLowerCase().endsWith(".shp"))?.name ??
@@ -195,22 +197,7 @@ export async function runValidation(
       });
       continue;
     }
-
-    for (const layerName of layers) {
-      const fileResult: FileResult = {
-        fileName: `${shpPath}::${layerName}`,
-        loadError: null,
-        checks: {},
-      };
-      try {
-        const { columns } = await loadSpatialLayer(shpPath, layerName, conn);
-        fileResult.checks = await runChecks(conn, columns);
-      } catch (e) {
-        fileResult.loadError =
-          "[load] " + (e instanceof Error ? e.message : String(e));
-      }
-      results.push(fileResult);
-    }
+    results.push(...(await processLayers(shpPath, conn)));
   }
 
   return { files: results };

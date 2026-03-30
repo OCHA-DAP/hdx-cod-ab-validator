@@ -4,6 +4,11 @@ export interface LoadResult {
   columns: string[];
 }
 
+async function describeColumns(conn: AsyncDuckDBConnection): Promise<string[]> {
+  const desc = await conn.query("DESCRIBE data");
+  return desc.toArray().map((r) => r.column_name as string);
+}
+
 // ── Parquet ──────────────────────────────────────────────────────────────────
 
 export async function loadParquet(
@@ -17,12 +22,12 @@ export async function loadParquet(
   await conn.query(
     `CREATE TABLE data AS SELECT * FROM read_parquet(${JSON.stringify(file.name)})`,
   );
-  const desc = await conn.query("DESCRIBE data");
-  return { columns: desc.toArray().map((r) => r.column_name as string) };
+  return { columns: await describeColumns(conn) };
 }
 
 // ── GeoJSON ──────────────────────────────────────────────────────────────────
-// Extracts feature properties into DuckDB without needing the spatial extension.
+// Extracts feature properties via read_json — faster than GDAL and does not
+// require the spatial extension.
 
 export async function loadGeoJSON(
   file: File,
@@ -49,8 +54,7 @@ export async function loadGeoJSON(
   await conn.query(
     `CREATE TABLE data AS SELECT * FROM read_json(${JSON.stringify(propsName)}, auto_detect=true)`,
   );
-  const desc = await conn.query("DESCRIBE data");
-  return { columns: desc.toArray().map((r) => r.column_name as string) };
+  return { columns: await describeColumns(conn) };
 }
 
 // ── Generic spatial (GDAL / ST_Read) ─────────────────────────────────────────
@@ -78,8 +82,7 @@ export async function loadSpatialLayer(
   await conn.query(
     `CREATE TABLE data AS SELECT * FROM ST_Read(${JSON.stringify(filePath)}, layer=${JSON.stringify(layerName)})`,
   );
-  const desc = await conn.query("DESCRIBE data");
-  return { columns: desc.toArray().map((r) => r.column_name as string) };
+  return { columns: await describeColumns(conn) };
 }
 
 // ── Multi-file registration helpers ──────────────────────────────────────────
@@ -91,16 +94,16 @@ export async function registerShapefileFiles(
   files: File[],
   db: AsyncDuckDB,
 ): Promise<string> {
-  let shpPath = "";
-  for (const file of files) {
-    const relPath =
-      (file as File & { webkitRelativePath: string }).webkitRelativePath ||
-      file.name;
-    if (!shpPath && relPath.toLowerCase().endsWith(".shp")) {
-      shpPath = relPath;
-    }
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    await db.registerFileBuffer(relPath, buffer);
-  }
+  const relPaths = files.map(
+    (f) =>
+      (f as File & { webkitRelativePath: string }).webkitRelativePath || f.name,
+  );
+  const shpPath = relPaths.find((p) => p.toLowerCase().endsWith(".shp")) ?? "";
+  await Promise.all(
+    files.map(async (file, i) => {
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      await db.registerFileBuffer(relPaths[i], buffer);
+    }),
+  );
   return shpPath;
 }

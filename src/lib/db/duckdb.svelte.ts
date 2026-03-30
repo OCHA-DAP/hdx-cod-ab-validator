@@ -1,8 +1,9 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
 
 class DuckDBState {
-  db = $state<duckdb.AsyncDuckDB | null>(null);
-  conn = $state<duckdb.AsyncDuckDBConnection | null>(null);
+  // db and conn are set once before ready=true; no reactivity needed on them.
+  db: duckdb.AsyncDuckDB | null = null;
+  conn: duckdb.AsyncDuckDBConnection | null = null;
   ready = $state(false);
   initError = $state<string | null>(null);
 }
@@ -31,12 +32,20 @@ export async function initDuckDB(): Promise<void> {
     const conn = await instance.connect();
     duckdbState.conn = conn;
 
-    // Load the spatial extension for GeoPackage support.
+    // Load the spatial extension for GDAL support.
+    // Try LOAD first (works when the extension is already cached or bundled);
+    // fall back to INSTALL+LOAD to avoid an unnecessary CDN fetch.
     // Failure is non-fatal — errors surface only when validating those formats.
     try {
-      await conn.query("INSTALL spatial; LOAD spatial;");
+      try {
+        await conn.query("LOAD spatial;");
+      } catch {
+        await conn.query("INSTALL spatial; LOAD spatial;");
+      }
     } catch {
-      console.warn("DuckDB spatial extension unavailable — GeoPackage support disabled.");
+      console.warn(
+        "DuckDB spatial extension unavailable — GDAL support disabled.",
+      );
     }
 
     duckdbState.ready = true;
