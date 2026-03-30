@@ -7,7 +7,15 @@
   let { fileResult, checks }: { fileResult: FileResult; checks: Check[] } =
     $props();
 
-  let mapOpen = $state(false);
+  let mapOpen = $state(
+    Object.values(fileResult.checks).some((r) => r.overlayGeojson != null),
+  );
+
+  let overlays = $derived(
+    Object.values(fileResult.checks)
+      .filter((r) => r.overlayGeojson != null)
+      .map((r) => r.overlayGeojson!),
+  );
 </script>
 
 <div class="file-result">
@@ -18,7 +26,7 @@
       {mapOpen ? "▼ Hide map" : "▶ Show map"}
     </button>
     {#if mapOpen}
-      <MapPreview preview={fileResult.preview} />
+      <MapPreview preview={fileResult.preview} {overlays} />
     {/if}
   {/if}
 

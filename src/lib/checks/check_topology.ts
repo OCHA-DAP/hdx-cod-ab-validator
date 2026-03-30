@@ -29,6 +29,8 @@ async function run(
   }
 
   const q = JSON.stringify(geomCol);
+  const overlapFeatures: string[] = [];
+  const gapFeatures: string[] = [];
 
   // ── 1. Overlaps ────────────────────────────────────────────────────────────
   // Use a row-numbered self-join to find pairs sharing interior area.
@@ -47,24 +49,30 @@ async function run(
         "Polygons within a layer MUST NOT overlap each other.",
     );
   } else {
+    // Retrieve intersection geometries directly — the row count is the overlap count.
     const overlapResult = await conn.query(`
       WITH indexed AS (
         SELECT row_number() OVER () AS rn, ${q} AS geom
         FROM data
         WHERE ${q} IS NOT NULL
       )
-      SELECT COUNT(*) AS overlap_count
+      SELECT TRY(ST_AsGeoJSON(ST_Intersection(a.geom, b.geom))) AS g
       FROM indexed a
       JOIN indexed b ON a.rn < b.rn
       WHERE ST_Intersects(a.geom, b.geom)
         AND NOT ST_Touches(a.geom, b.geom)
     `);
-    const overlapCount = Number(
-      (overlapResult.toArray()[0] as Record<string, unknown>).overlap_count,
-    );
-    if (overlapCount > 0) {
+    for (const row of overlapResult.toArray()) {
+      const g = (row as Record<string, unknown>).g;
+      if (g != null) {
+        overlapFeatures.push(
+          `{"type":"Feature","geometry":${g},"properties":{"issueType":"overlap"}}`,
+        );
+      }
+    }
+    if (overlapFeatures.length > 0) {
       violations.push(
-        `${overlapCount} pair(s) of polygons overlap. ` +
+        `${overlapFeatures.length} pair(s) of polygons overlap. ` +
           "Polygons within a layer MUST NOT overlap each other.",
       );
     } else {
@@ -73,37 +81,48 @@ async function run(
   }
 
   // ── 2. Gaps ────────────────────────────────────────────────────────────────
-  // Union all polygons, convert to GeoJSON, then count interior rings (holes).
-  // GeoJSON coordinates layout:
-  //   Polygon:      [ exterior_ring, hole1, hole2, … ]          → holes = length − 1
-  //   MultiPolygon: [ [ext, hole…], [ext, hole…], … ]           → holes = Σ(length − 1)
-  // Using ST_AsGeoJSON avoids ST_GeometryN / ST_Dump which are unavailable here.
+  // Union all polygons and extract interior rings (holes) — each hole is a gap.
+  // We parse the GeoJSON in JS to both count holes and build visualisation features.
   const gapResult = await conn.query(`
-    WITH unioned AS (
-      SELECT
-        ST_GeometryType(ST_Union_Agg(${q}))::VARCHAR AS geom_type,
-        ST_AsGeoJSON(ST_Union_Agg(${q}))             AS gj
-      FROM data
-      WHERE ${q} IS NOT NULL
-    )
     SELECT
-      geom_type,
-      CASE geom_type
-        WHEN 'POLYGON' THEN
-          json_array_length(json_extract(gj, '$.coordinates')) - 1
-        WHEN 'MULTIPOLYGON' THEN (
-          SELECT COALESCE(
-            SUM(json_array_length(json_extract(gj, '$.coordinates[' || i::VARCHAR || ']')) - 1),
-            0
-          )
-          FROM generate_series(0::BIGINT, json_array_length(json_extract(gj, '$.coordinates'))::BIGINT - 1) t(i)
-        )
-        ELSE 0
-      END AS gap_ring_count
-    FROM unioned
+      ST_GeometryType(ST_Union_Agg(${q}))::VARCHAR AS geom_type,
+      ST_AsGeoJSON(ST_Union_Agg(${q}))             AS gj
+    FROM data
+    WHERE ${q} IS NOT NULL
   `);
   const gapRow = gapResult.toArray()[0] as Record<string, unknown>;
-  const gapRingCount = Number(gapRow.gap_ring_count ?? 0);
+  const gjStr = gapRow.gj != null ? String(gapRow.gj) : null;
+  const geomType = String(gapRow.geom_type ?? "");
+
+  let gapRingCount = 0;
+  if (gjStr) {
+    try {
+      const geom = JSON.parse(gjStr) as {
+        type: string;
+        coordinates: number[][][];
+      };
+      if (geomType === "POLYGON") {
+        gapRingCount = geom.coordinates.length - 1;
+        for (let i = 1; i < geom.coordinates.length; i++) {
+          gapFeatures.push(
+            `{"type":"Feature","geometry":{"type":"Polygon","coordinates":${JSON.stringify([geom.coordinates[i]])}},"properties":{"issueType":"gap"}}`,
+          );
+        }
+      } else if (geomType === "MULTIPOLYGON") {
+        const mpCoords = geom.coordinates as unknown as number[][][][];
+        for (const poly of mpCoords) {
+          gapRingCount += poly.length - 1;
+          for (let i = 1; i < poly.length; i++) {
+            gapFeatures.push(
+              `{"type":"Feature","geometry":{"type":"Polygon","coordinates":${JSON.stringify([poly[i]])}},"properties":{"issueType":"gap"}}`,
+            );
+          }
+        }
+      }
+    } catch {
+      // JSON parse failed — gap count stays 0, no visualisation features
+    }
+  }
 
   if (gapRingCount > 0) {
     violations.push(
@@ -114,7 +133,14 @@ async function run(
     info.push("No gaps detected between polygons.");
   }
 
-  return { passed: violations.length === 0, violations, warnings, info };
+  // ── Overlay GeoJSON ────────────────────────────────────────────────────────
+  const allFeatures = [...overlapFeatures, ...gapFeatures];
+  const overlayGeojson =
+    allFeatures.length > 0
+      ? `{"type":"FeatureCollection","features":[${allFeatures.join(",")}]}`
+      : undefined;
+
+  return { passed: violations.length === 0, violations, warnings, info, overlayGeojson };
 }
 
 export const checkTopology: Check = {

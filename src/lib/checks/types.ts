@@ -5,6 +5,8 @@ export interface CheckResult {
   violations: string[]; // MUST violations — cause passed=false
   warnings: string[]; // SHOULD violations — don't cause failure
   info: string[]; // informational notes and known deviations
+  /** Optional GeoJSON FeatureCollection string for map overlay visualization. */
+  overlayGeojson?: string;
 }
 
 export interface Check {
