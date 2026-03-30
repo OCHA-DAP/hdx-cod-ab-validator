@@ -4,9 +4,8 @@ import type { CheckResult } from "./checks/types.ts";
 import type { PreviewData } from "./db/loader.ts";
 import {
   buildPreviewData,
-  listSpatialLayers,
-  loadGeoJSON,
   loadParquet,
+  listSpatialLayers,
   loadSpatialLayer,
   registerShapefileFiles,
 } from "./db/loader.ts";
@@ -136,8 +135,7 @@ async function processLayers(
 
 /**
  * Runs all registered checks against each layer sequentially.
- * Supports every format readable by DuckDB's spatial extension (via ST_Read /
- * GDAL) in addition to Parquet and GeoJSON. Shapefiles are grouped before loading.
+ * All formats are loaded via ST_Read (GDAL). Shapefiles are grouped before loading.
  */
 export async function runValidation(
   files: File[],
@@ -148,8 +146,8 @@ export async function runValidation(
   const { shpGroups, individualFiles } = groupFiles(files);
 
   // ── Individual files ──────────────────────────────────────────────────────
-  // Parquet and GeoJSON are loaded natively for speed; everything else goes
-  // through ST_Read so any GDAL-supported format works automatically.
+  // Parquet and GeoJSON are loaded natively; everything else goes through
+  // ST_Read so any GDAL-supported format works automatically.
 
   for (const file of individualFiles) {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -173,30 +171,8 @@ export async function runValidation(
       continue;
     }
 
-    if (ext === "geojson" || ext === "json") {
-      const fileResult: FileResult = {
-        fileName: file.name,
-        loadError: null,
-        checks: {},
-        preview: null,
-      };
-      try {
-        const { columns } = await loadGeoJSON(file, db, conn);
-        const outcome = await runChecksAndPreview(conn, columns);
-        fileResult.checks = outcome.checks;
-        // loadGeoJSON strips geometry from the data table (properties only), so
-        // buildPreviewData returns null. Use the original file directly instead —
-        // GeoJSON is always WGS-84 so no transform is needed, and the File blob
-        // is already in memory from the upload.
-        fileResult.preview = { url: URL.createObjectURL(file), bounds: null };
-      } catch (e) {
-        fileResult.loadError = e instanceof Error ? e.message : String(e);
-      }
-      results.push(fileResult);
-      continue;
-    }
-
-    // All other formats: register the file buffer and let ST_Read (GDAL) handle it.
+    // All other formats (GeoJSON, GeoPackage, FlatGeobuf, KML, …): register the
+    // file buffer and let ST_Read (GDAL) handle it.
     // Multi-layer files (e.g. GeoPackage) produce one FileResult per layer.
     const buffer = new Uint8Array(await file.arrayBuffer());
     await db.registerFileBuffer(file.name, buffer);

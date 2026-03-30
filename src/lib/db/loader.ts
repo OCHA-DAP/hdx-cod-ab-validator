@@ -25,41 +25,9 @@ export async function loadParquet(
   return { columns: await describeColumns(conn) };
 }
 
-// ── GeoJSON ──────────────────────────────────────────────────────────────────
-// Extracts feature properties via read_json — faster than GDAL and does not
-// require the spatial extension.
-
-export async function loadGeoJSON(
-  file: File,
-  db: AsyncDuckDB,
-  conn: AsyncDuckDBConnection,
-): Promise<LoadResult> {
-  await conn.query("DROP TABLE IF EXISTS data");
-  const text = await file.text();
-  const geojson = JSON.parse(text);
-  const rawFeatures: unknown[] =
-    geojson.type === "FeatureCollection"
-      ? geojson.features
-      : geojson.type === "Feature"
-        ? [geojson]
-        : [];
-  const properties = rawFeatures.map(
-    (f) => (f as { properties: Record<string, unknown> }).properties ?? {},
-  );
-  const propsName = file.name + "__props.json";
-  await db.registerFileBuffer(
-    propsName,
-    new TextEncoder().encode(JSON.stringify(properties)),
-  );
-  await conn.query(
-    `CREATE TABLE data AS SELECT * FROM read_json(${JSON.stringify(propsName)}, auto_detect=true)`,
-  );
-  return { columns: await describeColumns(conn) };
-}
-
-// ── Generic spatial (GDAL / ST_Read) ─────────────────────────────────────────
-// Works for any format supported by DuckDB's spatial extension: GeoPackage,
-// Shapefile, FlatGeobuf, KML, GML, GPX, SpatiaLite, etc.
+// ── Spatial (GDAL / ST_Read) ──────────────────────────────────────────────────
+// Works for any format supported by DuckDB's spatial extension: GeoJSON,
+// GeoPackage, Shapefile, FlatGeobuf, KML, GML, GPX, SpatiaLite, etc.
 // The file(s) must already be registered in DuckDB's virtual FS before calling.
 
 export async function listSpatialLayers(
