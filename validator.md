@@ -63,6 +63,10 @@ Columns SHOULD appear in the following order within each file:
 7. `iso2`, `iso3` (admin 0 only)
 8. `center_lat`, `center_lon`
 
+#### Cross-Layer Consistency
+
+The lowest-level file is the authoritative source for names and p-codes. All higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level.
+
 #### Known Deviations in Current Data
 
 - **`cod_version` vs `version`**: Some datasets (those with `v_` in the directory name) use `cod_version` instead of `version`, and the value format differs (`V_01` vs `v01`).
@@ -122,16 +126,27 @@ Each admin level N file contains name columns for all ancestor levels 0 through 
 | `adm{L}_name2` | string | 100        | Name in the second alternate language (`lang2`), nullable |
 | `adm{L}_name3` | string | 100        | Name in the third alternate language (`lang3`), nullable  |
 
-`adm{L}_name` MUST be present and non-null for all rows. `adm{L}_name1`, `adm{L}_name2`, and `adm{L}_name3` are REQUIRED columns but MAY contain null values. A name column MUST be null if the corresponding language column (`lang1`, `lang2`, `lang3`) is null.
+`adm{L}_name` MUST be non-null and non-empty for all rows. The alternate language name columns are REQUIRED but MAY contain null values. A name column MUST be null when its corresponding language column (`lang1`, `lang2`, `lang3`) is null. Empty strings (`""`) MUST be treated as equivalent to null for all name columns.
 
 ##### Name Value Consistency
 
 Name values within a dataset MUST be internally consistent in style. The following requirements apply to all name columns:
 
+- **No extraneous whitespace.** Names MUST NOT contain leading or trailing whitespace, consecutive spaces, or any non-space whitespace characters (e.g. tabs `\t`, newlines `\n`).
 - **No ALL CAPS names.** Names MUST NOT be fully uppercased (e.g., `KANDAHAR` is not acceptable; use `Kandahar`). Individual words in acronyms or established abbreviations that are conventionally uppercase are permitted (e.g., `DRC`).
+- **No all-lowercase names.** Names MUST NOT be fully lowercased (e.g., `kandahar` is not acceptable; use `Kandahar`). This does not apply to function words or particles that are intentionally lowercased within a name.
 - **No indiscriminate auto-capitalization.** Names MUST NOT apply title-case capitalization mechanically to every word. Language-specific capitalization rules MUST be respected. In particular, function words and particles such as prepositions and articles (e.g., `de`, `do`, `da`, `di`, `du`, `van`, `von`, `of`, `al-`) MUST be lowercased when they appear in the interior of a name, following the conventions of the relevant language (e.g., `Río de la Plata`, not `Río De La Plata`).
+- **Names must contain alphabetic characters.** Every name value MUST contain at least one alphabetic character (Unicode letter). Values consisting entirely of digits, punctuation, or other non-letter characters are not valid names.
 - **Consistent use of abbreviated vs. full forms.** Within a single name column, all names MUST use either the abbreviated form or the full form of a descriptor — not a mixture. For example, if `Special` is used in one name, `SP` MUST NOT appear in another (e.g., all rows should use `Special Administrative Region` or all should use `SAR`, not a mix). Abbreviations that are part of the official name of a unit (i.e., the full official name contains the abbreviation) are permitted.
-- **Consistent script and encoding.** All values within a single name column MUST be in the script and encoding appropriate for the declared language (`lang`, `lang1`, etc.) and MUST be consistently encoded throughout the file (e.g., no mixing of Latin and non-Latin scripts within the same column).
+- **Consistent script and encoding.** All values within a single name column MUST be in the script and encoding appropriate for the declared language (`lang`, `lang1`, etc.) and MUST be consistently encoded throughout the file (e.g., no mixing of Latin and non-Latin scripts within the same column). Each individual name value MUST contain only characters from the Unicode block(s) appropriate for the declared language. Validators SHOULD flag values containing characters outside the expected block(s) as violations.
+
+##### Name Uniqueness
+
+Within any parent unit, child unit names MUST be unique. No two units at the same level sharing the same parent may have the same name in any name column (`adm{L}_name`, `adm{L}_name1`, `adm{L}_name2`, `adm{L}_name3`). This ensures that the concatenation of name columns across all levels forms a unique identifier for each row. Null values are excluded from this check.
+
+#### Admin 0 Country Name
+
+For any name column whose declared language (`lang`, `lang1`, `lang2`, `lang3`) is one of the six official UN languages (Arabic, Chinese, English, French, Russian, Spanish), `adm0_name` (or the corresponding alternate name column) MUST use the short name for that language from the [UN M49 standard](https://unstats.un.org/unsd/methodology/m49/) (e.g., `Afghanistan` in English, `République démocratique du Congo` in French).
 
 #### Language Columns
 
@@ -160,11 +175,17 @@ For each level L (0 ≤ L ≤ N):
 | -------------- | ------ | ---------- | ------------------------------------------------- |
 | `adm{L}_pcode` | string | 20         | Place code for the administrative unit at level L |
 
-P-codes (place codes) are alphanumeric strings identifying administrative units. They are semantic identifiers optimised for human readability: the country code and hierarchical structure are visible in the code itself. Each administrative unit MUST have exactly one P-code. P-codes MUST be unique within their administrative level. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0. P-codes MUST be alphanumeric only (letters and digits, no spaces or special characters).
+P-codes (place codes) are semantic identifiers optimised for human readability: the country code and hierarchical structure are visible in the code itself.
+
+##### Format
+
+P-codes MUST start with the ISO 3166-1 country code (`adm0_pcode`); the sub-national portion MUST consist of numeric digits only. The country prefix SHOULD be the [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) form (two uppercase letters), as a shorter prefix keeps the full hierarchy compact (e.g., `AF` for Afghanistan). Some older datasets use [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) instead (e.g., `BDI` for Burundi); validators MUST accept this but SHOULD warn about it.
 
 P-codes MUST be stored and exchanged without delimiters. Delimited forms such as `SS.01.01` or `SS-01-01` MUST NOT appear in data columns. Delimiters may be introduced by a presentation layer for readability but cannot be reliably reversed without out-of-band knowledge of each country's digit-width conventions, which vary by country and level.
 
-The admin 0 p-code (`adm0_pcode`) SHOULD equal the country's [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code (e.g., `AF` for Afghanistan). Alpha-2 is preferred because the country code prefixes all sub-national codes, so a shorter prefix keeps the full hierarchy compact. Some older datasets use [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) instead (e.g., `BDI` for Burundi); validators MUST accept this but SHOULD warn about it.
+##### Uniqueness and Hierarchy
+
+Each administrative unit MUST have exactly one P-code. P-codes MUST be unique within their administrative level. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0.
 
 ##### Global identifiers
 

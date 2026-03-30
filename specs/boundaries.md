@@ -1,6 +1,11 @@
 ---
 version: 0.1.0-draft
 referenced_by: validator.md
+sources:
+  - specs/boundaries/names.md
+  - specs/boundaries/codes.md
+  - specs/boundaries/versions.md
+  - specs/boundaries/attributes.md
 ---
 
 # COD-AB Specification
@@ -19,12 +24,6 @@ COD-ABs are the authoritative administrative boundary datasets for humanitarian 
 
 Each admin boundary file represents one administrative level for one country version. Every row in the file is a single administrative unit (polygon) at that level.
 
-Column schemas are defined across several documents:
-
-- [Names](boundaries/names.md) — name and language columns
-- [Codes](boundaries/codes.md) — p-code and version columns
-- [Attributes](boundaries/attributes.md) — date, computed, identifier, and reference name columns
-
 ### Non-Standard Columns
 
 Datasets MAY include additional columns not defined in this specification (e.g., `regionname_en`, `regioncode`, `unittype`). Such columns MUST be placed after all standard columns and SHOULD be documented by the data producer. Parsers MUST NOT fail when encountering non-standard columns.
@@ -41,6 +40,10 @@ Columns SHOULD appear in the following order within each file:
 6. `adm{N}_ref_name` (if present)
 7. `iso2`, `iso3` (admin 0 only)
 8. `center_lat`, `center_lon`
+
+## Cross-Layer Consistency
+
+The lowest-level file is the authoritative source for names and p-codes. All higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level.
 
 ## Known Deviations in Current Data
 

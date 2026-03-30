@@ -13,11 +13,17 @@ For each level L (0 ≤ L ≤ N):
 | -------------- | ------ | ---------- | ------------------------------------------------- |
 | `adm{L}_pcode` | string | 20         | Place code for the administrative unit at level L |
 
-P-codes (place codes) are alphanumeric strings identifying administrative units. They are semantic identifiers optimised for human readability: the country code and hierarchical structure are visible in the code itself. Each administrative unit MUST have exactly one P-code. P-codes MUST be unique within their administrative level. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0. P-codes MUST be alphanumeric only (letters and digits, no spaces or special characters).
+P-codes (place codes) are semantic identifiers optimised for human readability: the country code and hierarchical structure are visible in the code itself.
+
+### Format
+
+P-codes MUST start with the ISO 3166-1 country code (`adm0_pcode`); the sub-national portion MUST consist of numeric digits only. The country prefix SHOULD be the [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) form (two uppercase letters), as a shorter prefix keeps the full hierarchy compact (e.g., `AF` for Afghanistan). Some older datasets use [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) instead (e.g., `BDI` for Burundi); validators MUST accept this but SHOULD warn about it.
 
 P-codes MUST be stored and exchanged without delimiters. Delimited forms such as `SS.01.01` or `SS-01-01` MUST NOT appear in data columns. Delimiters may be introduced by a presentation layer for readability but cannot be reliably reversed without out-of-band knowledge of each country's digit-width conventions, which vary by country and level.
 
-The admin 0 p-code (`adm0_pcode`) SHOULD equal the country's [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code (e.g., `AF` for Afghanistan). Alpha-2 is preferred because the country code prefixes all sub-national codes, so a shorter prefix keeps the full hierarchy compact. Some older datasets use [ISO 3166-1 alpha-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3) instead (e.g., `BDI` for Burundi); validators MUST accept this but SHOULD warn about it.
+### Uniqueness and Hierarchy
+
+Each administrative unit MUST have exactly one P-code. P-codes MUST be unique within their administrative level. P-codes MUST be hierarchically nested: `adm{L}_pcode` MUST start with `adm{L-1}_pcode` for all L > 0.
 
 ### Global identifiers
 
