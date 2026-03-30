@@ -15,21 +15,43 @@ This is a **specification repository** for the COD-AB (Common Operational Datase
 
 ## Validation Scripts
 
-When a user asks you to validate a COD-AB file, check `scripts/index.json` for available scripts and run them with the Bash tool. Each script accepts a file path and returns JSON to stdout.
+Each script in `scripts/index.json` declares an `applies_to` field specifying its intended layer type(s). The controlled vocabulary is:
 
-Example:
+- `"admin"` — admin boundary polygons (admin0–5). Semantic tag; geometry type alone cannot distinguish these from other polygon layers, so the user must identify which files are admin layers.
+- `"lines"` — line geometry layers (LineString/MultiLineString). Auto-detectable from geometry type.
+- `"points"` — point geometry layers. Auto-detectable from geometry type.
+- `"all"` — applies to every layer regardless of type.
+
+When a user asks you to validate a COD-AB file, check `scripts/index.json` for available scripts and only run a script against files that match its `applies_to` target. Each script exports a `check(path: str) -> dict` function and can also be run as a CLI.
+
+**For a single file**, use the CLI:
 
 ```bash
 uv run scripts/check_versions.py path/to/file.gpkg
 ```
 
-Scripts exit 0 on pass, 1 on violations. After running one or more validation scripts, always present results as a formatted summary report using a table where:
+**For multiple files**, import the `check()` functions directly in a Python script rather than shelling out per file — subprocess startup cost is ~300ms per call and becomes the dominant bottleneck at scale:
 
+```python
+import sys
+sys.path.insert(0, "scripts")
+import check_versions, check_dates
+
+result = check_versions.check(str(path))
+```
+
+Scripts return `{"passed": bool, "violations": [...], "warnings": [...], "info": [...]}`. The CLI exits 0 on pass, 1 on violations. After running one or more validation scripts, present results as a formatted summary report:
+
+**If all checks pass for a group:** show a single `###` heading with "All checks passed" — no table, no messages.
+
+**If any check fails in a group:** use a `###` heading (country name and folder) and render a table where:
 - Rows are files
 - Columns are validation checks, using clean human-readable names (e.g. `check_versions` → "Version")
 - Cells show Pass/Fail
 
-When validating multiple countries (or multiple version groups within a country), use a `###` heading per group (country name and folder) and render one table per group. Follow each table with any violations (MUST rules broken), warnings (SHOULD rules broken), or info messages for that group.
+Follow the table with only the failing details: violations (MUST rules broken), warnings (SHOULD rules broken), and info messages — per layer, clearly labeled.
+
+**Always end with an issue-grouped summary table** with columns: Issue | Severity | Folders affected | Files affected. Include both violations (MUST rules) and warnings (SHOULD rules). Group by issue type (e.g. "Missing `valid_on`/`valid_to` columns", "Mixed values within a layer") and count how many folders and files are affected by each. Add a brief sentence interpreting the dominant pattern.
 
 ## Editing Guidelines
 

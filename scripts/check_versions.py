@@ -22,31 +22,36 @@ MAJOR_RE = re.compile(r"^v\d{2}$")
 MINOR_RE = re.compile(r"^v\d{2}\.\d{2}$")
 
 
-def load_attributes(path: str):
-    """Return a DataFrame of attribute columns (no geometry).
+def load_attributes(path: str, columns: list[str] | None = None):
+    """Return a DataFrame with only the requested attribute columns (no geometry).
 
     Accepts any tabular or geodata format readable by pandas or geopandas:
-    CSV, Parquet, Excel, GeoJSON, GeoPackage, Shapefile, FlatGeobuf, etc.
-    The geometry column is dropped if present.
+    CSV, Parquet (including GeoParquet), Excel, GeoJSON, GeoPackage, Shapefile, FlatGeobuf, etc.
     """
     import pandas as pd
 
     ext = path.rsplit(".", 1)[-1].lower()
 
-    readers = {
-        "csv": lambda p: pd.read_csv(p, dtype=str),
-        "parquet": pd.read_parquet,
-        "xlsx": pd.read_excel,
-        "xls": pd.read_excel,
-    }
+    if ext == "csv":
+        col_filter = (lambda c: c in columns) if columns else None
+        return pd.read_csv(path, dtype=str, usecols=col_filter)
 
-    if ext in readers:
-        return readers[ext](path)
+    if ext in ("xlsx", "xls"):
+        col_filter = (lambda c: c in columns) if columns else None
+        return pd.read_excel(path, usecols=col_filter)
 
-    # Fall back to geopandas for spatial formats
+    if ext == "parquet":
+        import pyarrow.parquet as pq
+        available = set(pq.read_schema(path).names)
+        sel = [c for c in columns if c in available] if columns else None
+        return pd.read_parquet(path, columns=sel)
+
+    # Spatial formats (GeoPackage, GeoJSON, Shapefile, etc.)
     import geopandas as gpd
-    gdf = gpd.read_file(path)
-    return gdf.drop(columns="geometry", errors="ignore")
+    df = gpd.read_file(path, ignore_geometry=True)
+    if columns:
+        df = df[[c for c in columns if c in df.columns]]
+    return df
 
 
 def check(path: str) -> dict:
@@ -54,7 +59,7 @@ def check(path: str) -> dict:
     warnings = []
     info = []
 
-    df = load_attributes(path)
+    df = load_attributes(path, columns=["version", "cod_version"])
     columns = list(df.columns)
 
     has_version = "version" in columns
