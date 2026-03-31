@@ -19,13 +19,13 @@ UUIDs are requested from and registered in the UN OCHA COD-AB registry before a 
 
 The registry is a single global table maintained by UN OCHA. It contains one row per `(uid, version)` combination — that is, one row each time a unit appears in a published dataset version.
 
-| Column      | Type    | Notes                                                              |
-| ----------- | ------- | ------------------------------------------------------------------ |
-| `uid`       | string  | UN OCHA-issued UUID v4                                             |
-| `iso2`      | string  | ISO 3166-1 alpha-2 country code                                    |
-| `adm_level` | integer | Administrative level (0, 1, 2, …)                                  |
-| `pcode`     | string  | P-code for this unit in this version                               |
-| `version`   | string  | Dataset version in which this P-code appears (e.g. `v01`, `v02`)  |
+| Column      | Type    | Notes                                                            |
+| ----------- | ------- | ---------------------------------------------------------------- |
+| `uid`       | string  | UN OCHA-issued UUID v4                                           |
+| `iso2`      | string  | ISO 3166-1 alpha-2 country code                                  |
+| `adm_level` | integer | Administrative level (0, 1, 2, …)                                |
+| `pcode`     | string  | P-code for this unit in this version                             |
+| `version`   | string  | Dataset version in which this P-code appears (e.g. `v01`, `v02`) |
 
 The combination of `(iso2, adm_level, pcode, version)` MUST be unique within the registry. A single `uid` will appear in multiple rows if the unit exists across multiple dataset versions, and MAY appear with different `pcode` values if the P-code changed between versions.
 
@@ -43,11 +43,11 @@ To find all versions in which a unit has appeared, query the registry for all ro
 
 The unit "Acholi" (Uganda admin 1) is published in versions `v01` and `v02` with the same P-code, then assigned a new P-code in `v03` after redistricting.
 
-| uid          | iso2 | adm_level | pcode  | version |
-| ------------ | ---- | --------- | ------ | ------- |
-| e5f6a7b8-…   | UG   | 1         | UG101  | v01     |
-| e5f6a7b8-…   | UG   | 1         | UG101  | v02     |
-| e5f6a7b8-…   | UG   | 1         | UG201  | v03     |
+| uid        | iso2 | adm_level | pcode | version |
+| ---------- | ---- | --------- | ----- | ------- |
+| e5f6a7b8-… | UG   | 1         | UG101 | v01     |
+| e5f6a7b8-… | UG   | 1         | UG101 | v02     |
+| e5f6a7b8-… | UG   | 1         | UG201 | v03     |
 
 ## Change Taxonomy
 
@@ -124,14 +124,14 @@ A unit is dissolved with no successor — its territory reverts to a parent leve
 
 Unit succession is recorded in a separate linkage table maintained by UN OCHA alongside the registry. It contains one row per `(source_uid, target_uid)` pair.
 
-| Column           | Type    | Notes                                                                                   |
-| ---------------- | ------- | --------------------------------------------------------------------------------------- |
-| `source_uid`     | string  | UID of the retired (predecessor) unit                                                   |
-| `target_uid`     | string  | UID of the successor unit; null if relationship is `abolished`                          |
+| Column           | Type    | Notes                                                                                  |
+| ---------------- | ------- | -------------------------------------------------------------------------------------- |
+| `source_uid`     | string  | UID of the retired (predecessor) unit                                                  |
+| `target_uid`     | string  | UID of the successor unit; null if relationship is `abolished`                         |
 | `relationship`   | string  | One of: `split_into`, `merged_into`, `absorbed_into`, `redistricted_into`, `abolished` |
-| `effective_date` | date    | Date the administrative change took effect                                              |
+| `effective_date` | date    | Date the administrative change took effect                                             |
 | `overlap_pct`    | integer | Estimated percentage of `source_uid` area now covered by `target_uid`; null if unknown |
-| `notes`          | string  | Optional. Citation of the legal instrument or source authorising the change             |
+| `notes`          | string  | Optional. Citation of the legal instrument or source authorising the change            |
 
 A split of one unit into three produces three rows with the same `source_uid`. A merge of three units into one produces three rows with the same `target_uid`.
 
@@ -141,11 +141,11 @@ A split of one unit into three produces three rows with the same `source_uid`. A
 
 Uganda restructured its administrative level 1. The Northern Region (`a1b2c3d4-…`) was split into three new units: Acholi (`e5f6a7b8-…`), Lango (`c9d0e1f2-…`), and West Nile (`a3b4c5d6-…`).
 
-| source_uid  | target_uid  | relationship | effective_date | overlap_pct | notes                             |
-| ----------- | ----------- | ------------ | -------------- | ----------- | --------------------------------- |
-| a1b2c3d4-…  | e5f6a7b8-…  | split_into   | 2005-07-01     | 35          | Uganda Local Governments Act 2005 |
-| a1b2c3d4-…  | c9d0e1f2-…  | split_into   | 2005-07-01     | 40          | Uganda Local Governments Act 2005 |
-| a1b2c3d4-…  | a3b4c5d6-…  | split_into   | 2005-07-01     | 25          | Uganda Local Governments Act 2005 |
+| source_uid | target_uid | relationship | effective_date | overlap_pct | notes                             |
+| ---------- | ---------- | ------------ | -------------- | ----------- | --------------------------------- |
+| a1b2c3d4-… | e5f6a7b8-… | split_into   | 2005-07-01     | 35          | Uganda Local Governments Act 2005 |
+| a1b2c3d4-… | c9d0e1f2-… | split_into   | 2005-07-01     | 40          | Uganda Local Governments Act 2005 |
+| a1b2c3d4-… | a3b4c5d6-… | split_into   | 2005-07-01     | 25          | Uganda Local Governments Act 2005 |
 
 ## Querying Succession
 

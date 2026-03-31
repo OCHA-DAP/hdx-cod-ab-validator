@@ -13,21 +13,21 @@
 {#if violations.length}
   <h4 class="heading violation-heading">Violations (MUST)</h4>
   <ul class="message-list violations">
-    {#each violations as v}<li>{v}</li>{/each}
+    {#each violations as v (v)}<li>{v}</li>{/each}
   </ul>
 {/if}
 
 {#if warnings.length}
   <h4 class="heading warning-heading">Warnings (SHOULD)</h4>
   <ul class="message-list warnings">
-    {#each warnings as w}<li>{w}</li>{/each}
+    {#each warnings as w (w)}<li>{w}</li>{/each}
   </ul>
 {/if}
 
 {#if info.length}
   <h4 class="heading info-heading">Info</h4>
   <ul class="message-list info-list">
-    {#each info as i}<li>{i}</li>{/each}
+    {#each info as i (i)}<li>{i}</li>{/each}
   </ul>
 {/if}
 

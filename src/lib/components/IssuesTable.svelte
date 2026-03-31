@@ -1,10 +1,7 @@
 <script lang="ts">
-  import type { IssueFeature } from "./mapUtils";
+  import type { IssueFeature } from './mapUtils';
 
-  let {
-    features,
-    onZoom,
-  }: { features: IssueFeature[]; onZoom: (f: IssueFeature) => void } =
+  let { features, onZoom }: { features: IssueFeature[]; onZoom: (f: IssueFeature) => void } =
     $props();
 </script>
 
@@ -17,16 +14,16 @@
       </tr>
     </thead>
     <tbody>
-      {#each features as feature, i}
+      {#each features as feature, i (i)}
         <tr onclick={() => onZoom(feature)}>
           <td class="idx">{i + 1}</td>
           <td>
             <span
               class="badge"
-              class:overlap={feature.properties.issueType === "overlap"}
-              class:gap={feature.properties.issueType === "gap"}
+              class:overlap={feature.properties.issueType === 'overlap'}
+              class:gap={feature.properties.issueType === 'gap'}
             >
-              {feature.properties.issueType === "overlap" ? "Overlap" : "Gap"}
+              {feature.properties.issueType === 'overlap' ? 'Overlap' : 'Gap'}
             </span>
           </td>
         </tr>

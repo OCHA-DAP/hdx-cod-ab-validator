@@ -1,14 +1,14 @@
-import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
-import { checks } from "./checks/registry.ts";
-import type { CheckResult } from "./checks/types.ts";
-import type { PreviewData } from "./db/loader.ts";
+import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
+import { checks } from './checks/registry.ts';
+import type { CheckResult } from './checks/types.ts';
+import type { PreviewData } from './db/loader.ts';
 import {
   buildPreviewData,
   loadParquet,
   listSpatialLayers,
   loadSpatialLayer,
   registerShapefileFiles,
-} from "./db/loader.ts";
+} from './db/loader.ts';
 
 export interface FileResult {
   fileName: string;
@@ -37,7 +37,7 @@ async function runChecksAndPreview(
   return { checks: checkResults, preview };
 }
 
-const SHP_EXTS = new Set([".shp", ".dbf", ".shx", ".prj", ".cpg"]);
+const SHP_EXTS = new Set(['.shp', '.dbf', '.shx', '.prj', '.cpg']);
 
 /**
  * Groups files by format:
@@ -55,16 +55,15 @@ function groupFiles(files: File[]): {
 
   for (const file of files) {
     const fullPath =
-      (file as File & { webkitRelativePath: string }).webkitRelativePath ||
-      file.name;
-    const dotIdx = fullPath.lastIndexOf(".");
+      (file as File & { webkitRelativePath: string }).webkitRelativePath || file.name;
+    const dotIdx = fullPath.lastIndexOf('.');
     if (dotIdx !== -1) {
       const ext = fullPath.slice(dotIdx).toLowerCase();
       if (SHP_EXTS.has(ext)) {
         const stem = fullPath.slice(0, dotIdx).toLowerCase();
         if (!shpGroups.has(stem)) shpGroups.set(stem, []);
         shpGroups.get(stem)!.push(file);
-        if (ext === ".shp") shpStems.add(stem);
+        if (ext === '.shp') shpStems.add(stem);
         continue;
       }
     }
@@ -82,10 +81,7 @@ function groupFiles(files: File[]): {
   return { shpGroups, individualFiles };
 }
 
-async function processLayers(
-  filePath: string,
-  conn: AsyncDuckDBConnection,
-): Promise<FileResult[]> {
+async function processLayers(filePath: string, conn: AsyncDuckDBConnection): Promise<FileResult[]> {
   let layers: string[];
   try {
     layers = await listSpatialLayers(filePath, conn);
@@ -125,8 +121,7 @@ async function processLayers(
       fileResult.checks = outcome.checks;
       fileResult.preview = outcome.preview;
     } catch (e) {
-      fileResult.loadError =
-        "[load] " + (e instanceof Error ? e.message : String(e));
+      fileResult.loadError = '[load] ' + (e instanceof Error ? e.message : String(e));
     }
     results.push(fileResult);
   }
@@ -150,9 +145,9 @@ export async function runValidation(
   // ST_Read so any GDAL-supported format works automatically.
 
   for (const file of individualFiles) {
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
 
-    if (ext === "parquet") {
+    if (ext === 'parquet') {
       const fileResult: FileResult = {
         fileName: file.name,
         loadError: null,
@@ -186,9 +181,7 @@ export async function runValidation(
     try {
       shpPath = await registerShapefileFiles(shpFiles, db);
     } catch (e) {
-      const name =
-        shpFiles.find((f) => f.name.toLowerCase().endsWith(".shp"))?.name ??
-        "shapefile";
+      const name = shpFiles.find((f) => f.name.toLowerCase().endsWith('.shp'))?.name ?? 'shapefile';
       results.push({
         fileName: name,
         loadError: e instanceof Error ? e.message : String(e),

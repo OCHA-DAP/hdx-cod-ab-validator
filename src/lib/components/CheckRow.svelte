@@ -1,15 +1,12 @@
 <script lang="ts">
-  import type { Check } from "$lib/checks/types";
-  import type { FileResult } from "$lib/runner";
-  import MapPreview from "./MapPreview.svelte";
-  import MessageList from "./MessageList.svelte";
+  import type { Check } from '$lib/checks/types';
+  import type { FileResult } from '$lib/runner';
+  import MapPreview from './MapPreview.svelte';
+  import MessageList from './MessageList.svelte';
 
-  let { fileResult, checks }: { fileResult: FileResult; checks: Check[] } =
-    $props();
+  let { fileResult, checks }: { fileResult: FileResult; checks: Check[] } = $props();
 
-  let mapOpen = $state(
-    Object.values(fileResult.checks).some((r) => r.overlayGeojson != null),
-  );
+  let mapOpen = $state(Object.values(fileResult.checks).some((r) => r.overlayGeojson != null));
 
   let overlays = $derived(
     Object.values(fileResult.checks)
@@ -23,7 +20,7 @@
 
   {#if fileResult.preview}
     <button class="map-toggle" onclick={() => (mapOpen = !mapOpen)}>
-      {mapOpen ? "▼ Hide map" : "▶ Show map"}
+      {mapOpen ? '▼ Hide map' : '▶ Show map'}
     </button>
     {#if mapOpen}
       <MapPreview preview={fileResult.preview} {overlays} />
@@ -34,17 +31,17 @@
     <p class="load-error">Load error: {fileResult.loadError}</p>
   {:else}
     <div class="badges">
-      {#each checks as check}
+      {#each checks as check (check.name)}
         {@const r = fileResult.checks[check.name]}
         {#if r}
           <span class="badge" class:pass={r.passed} class:fail={!r.passed}>
-            {check.label}: {r.passed ? "Pass" : "Fail"}
+            {check.label}: {r.passed ? 'Pass' : 'Fail'}
           </span>
         {/if}
       {/each}
     </div>
 
-    {#each checks as check}
+    {#each checks as check (check.name)}
       {@const r = fileResult.checks[check.name]}
       {#if r && (r.violations.length || r.warnings.length || r.info.length)}
         <details open={!r.passed || r.warnings.length > 0}>
@@ -53,11 +50,7 @@
             <span class="spec-ref">spec: {check.specSection}</span>
           </summary>
           <div class="check-detail">
-            <MessageList
-              violations={r.violations}
-              warnings={r.warnings}
-              info={r.info}
-            />
+            <MessageList violations={r.violations} warnings={r.warnings} info={r.info} />
           </div>
         </details>
       {/if}

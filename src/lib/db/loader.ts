@@ -1,11 +1,11 @@
-import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
+import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 
 export interface LoadResult {
   columns: string[];
 }
 
 async function describeColumns(conn: AsyncDuckDBConnection): Promise<string[]> {
-  const desc = await conn.query("DESCRIBE data");
+  const desc = await conn.query('DESCRIBE data');
   return desc.toArray().map((r) => r.column_name as string);
 }
 
@@ -16,12 +16,10 @@ export async function loadParquet(
   db: AsyncDuckDB,
   conn: AsyncDuckDBConnection,
 ): Promise<LoadResult> {
-  await conn.query("DROP TABLE IF EXISTS data");
+  await conn.query('DROP TABLE IF EXISTS data');
   const buffer = new Uint8Array(await file.arrayBuffer());
   await db.registerFileBuffer(file.name, buffer);
-  await conn.query(
-    `CREATE TABLE data AS SELECT * FROM read_parquet(${JSON.stringify(file.name)})`,
-  );
+  await conn.query(`CREATE TABLE data AS SELECT * FROM read_parquet(${JSON.stringify(file.name)})`);
   return { columns: await describeColumns(conn) };
 }
 
@@ -46,7 +44,7 @@ export async function loadSpatialLayer(
   layerName: string,
   conn: AsyncDuckDBConnection,
 ): Promise<LoadResult> {
-  await conn.query("DROP TABLE IF EXISTS data");
+  await conn.query('DROP TABLE IF EXISTS data');
   await conn.query(
     `CREATE TABLE data AS SELECT * FROM ST_Read(${JSON.stringify(filePath)}, layer=${JSON.stringify(layerName)})`,
   );
@@ -72,19 +70,15 @@ export interface PreviewData {
  * Returns null if the table has no GEOMETRY column or the spatial extension
  * is unavailable.
  */
-export async function buildPreviewData(
-  conn: AsyncDuckDBConnection,
-): Promise<PreviewData | null> {
+export async function buildPreviewData(conn: AsyncDuckDBConnection): Promise<PreviewData | null> {
   try {
     // Find the first GEOMETRY column in the current data table.
-    const desc = await conn.query("DESCRIBE data");
+    const desc = await conn.query('DESCRIBE data');
     const allCols = desc.toArray() as Array<{
       column_name: string;
       column_type: string;
     }>;
-    const geomCol = allCols.find(
-      (r) => r.column_type === "GEOMETRY",
-    )?.column_name;
+    const geomCol = allCols.find((r) => r.column_type === 'GEOMETRY')?.column_name;
     if (!geomCol) return null;
     const quotedCol = JSON.stringify(geomCol); // becomes "colName" — valid SQL quoted identifier
 
@@ -102,12 +96,7 @@ export async function buildPreviewData(
       `);
       const row = bboxResult.toArray()[0];
       const { xmin, ymin, xmax, ymax } = row as Record<string, number>;
-      if (
-        isFinite(xmin) &&
-        isFinite(ymin) &&
-        isFinite(xmax) &&
-        isFinite(ymax)
-      ) {
+      if (isFinite(xmin) && isFinite(ymin) && isFinite(xmax) && isFinite(ymax)) {
         bounds = [xmin, ymin, xmax, ymax];
       }
     } catch {
@@ -126,13 +115,12 @@ export async function buildPreviewData(
     const parts: string[] = [];
     for (const row of rows.toArray()) {
       const g = (row as Record<string, unknown>).g;
-      if (g != null)
-        parts.push(`{"type":"Feature","geometry":${g},"properties":{}}`);
+      if (g != null) parts.push(`{"type":"Feature","geometry":${g},"properties":{}}`);
     }
     if (parts.length === 0) return null;
 
-    const geojson = `{"type":"FeatureCollection","features":[${parts.join(",")}]}`;
-    const blob = new Blob([geojson], { type: "application/json" });
+    const geojson = `{"type":"FeatureCollection","features":[${parts.join(',')}]}`;
+    const blob = new Blob([geojson], { type: 'application/json' });
 
     return { blob, bounds };
   } catch {
@@ -145,15 +133,11 @@ export async function buildPreviewData(
 // virtual FS before ST_Read can open them.
 
 /** Registers all shapefile component files and returns the .shp file path. */
-export async function registerShapefileFiles(
-  files: File[],
-  db: AsyncDuckDB,
-): Promise<string> {
+export async function registerShapefileFiles(files: File[], db: AsyncDuckDB): Promise<string> {
   const relPaths = files.map(
-    (f) =>
-      (f as File & { webkitRelativePath: string }).webkitRelativePath || f.name,
+    (f) => (f as File & { webkitRelativePath: string }).webkitRelativePath || f.name,
   );
-  const shpPath = relPaths.find((p) => p.toLowerCase().endsWith(".shp")) ?? "";
+  const shpPath = relPaths.find((p) => p.toLowerCase().endsWith('.shp')) ?? '';
   await Promise.all(
     files.map(async (file, i) => {
       const buffer = new Uint8Array(await file.arrayBuffer());

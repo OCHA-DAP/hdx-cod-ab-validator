@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { initDuckDB } from "$lib/db/duckdb.svelte";
+  import { onMount } from 'svelte';
+  import { initDuckDB } from '$lib/db/duckdb.svelte';
 
   let { children } = $props();
 

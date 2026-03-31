@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { duckdbState } from "$lib/db/duckdb.svelte";
-  import { runValidation } from "$lib/runner";
-  import type { DatasetResult } from "$lib/runner";
-  import FileUpload from "$lib/components/FileUpload.svelte";
-  import ResultsReport from "$lib/components/ResultsReport.svelte";
+  import { duckdbState } from '$lib/db/duckdb.svelte';
+  import { runValidation } from '$lib/runner';
+  import type { DatasetResult } from '$lib/runner';
+  import FileUpload from '$lib/components/FileUpload.svelte';
+  import ResultsReport from '$lib/components/ResultsReport.svelte';
 
   let files = $state<File[]>([]);
   let running = $state(false);
   let result = $state<DatasetResult | null>(null);
   let runError = $state<string | null>(null);
 
-  let canRun = $derived(
-    duckdbState.ready && files.length > 0 && !running,
-  );
+  let canRun = $derived(duckdbState.ready && files.length > 0 && !running);
 
   async function handleRun() {
     const { db, conn } = duckdbState;
@@ -33,9 +31,7 @@
 <main>
   <header>
     <h1>COD-AB Data Validator</h1>
-    <p class="subtitle">
-      Validate administrative boundary files against the COD-AB specification.
-    </p>
+    <p class="subtitle">Validate administrative boundary files against the COD-AB specification.</p>
   </header>
 
   {#if duckdbState.initError}
@@ -47,7 +43,7 @@
   <FileUpload bind:files disabled={!duckdbState.ready} />
 
   <button onclick={handleRun} disabled={!canRun} class="run-button">
-    {running ? "Running…" : "Validate"}
+    {running ? 'Running…' : 'Validate'}
   </button>
 
   {#if running}

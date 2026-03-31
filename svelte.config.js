@@ -1,5 +1,5 @@
-import adapter from "@sveltejs/adapter-static";
-import { relative, sep } from "node:path";
+import adapter from '@sveltejs/adapter-static';
+import { relative, sep } from 'node:path';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -9,16 +9,15 @@ const config = {
     runes: ({ filename }) => {
       const relativePath = relative(import.meta.dirname, filename);
       const pathSegments = relativePath.toLowerCase().split(sep);
-      return pathSegments.includes("node_modules") ? undefined : true;
+      return pathSegments.includes('node_modules') ? undefined : true;
     },
   },
   kit: {
     adapter: adapter({
-      fallback: "index.html",
+      fallback: 'index.html',
     }),
     paths: {
-      base:
-        process.env.NODE_ENV === "production" ? "/hdx-cod-ab-validator" : "",
+      base: process.env.NODE_ENV === 'production' ? '/hdx-cod-ab-validator' : '',
     },
   },
 };

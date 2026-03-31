@@ -1,42 +1,34 @@
 <script lang="ts">
-  import { checks } from "$lib/checks/registry";
-  import type { DatasetResult } from "$lib/runner";
-  import CheckRow from "./CheckRow.svelte";
+  import { checks } from '$lib/checks/registry';
+  import type { DatasetResult } from '$lib/runner';
+  import CheckRow from './CheckRow.svelte';
 
   let { result }: { result: DatasetResult } = $props();
 
   let totalViolations = $derived(
     result.files.reduce(
-      (sum, f) =>
-        sum +
-        Object.values(f.checks).reduce((s, r) => s + r.violations.length, 0),
+      (sum, f) => sum + Object.values(f.checks).reduce((s, r) => s + r.violations.length, 0),
       0,
     ),
   );
 
-  let allPassed = $derived(
-    totalViolations === 0 && result.files.every((f) => !f.loadError),
-  );
+  let allPassed = $derived(totalViolations === 0 && result.files.every((f) => !f.loadError));
 </script>
 
 <section class="report">
   <h2 class="report-title">Validation Report</h2>
 
-  <div
-    class="summary"
-    class:all-passed={allPassed}
-    class:has-issues={!allPassed}
-  >
+  <div class="summary" class:all-passed={allPassed} class:has-issues={!allPassed}>
     {result.files.length}
-    {result.files.length === 1 ? "layer" : "layers"} checked &nbsp;·&nbsp;
+    {result.files.length === 1 ? 'layer' : 'layers'} checked &nbsp;·&nbsp;
     {totalViolations}
-    {totalViolations === 1 ? "violation" : "violations"}
+    {totalViolations === 1 ? 'violation' : 'violations'}
     {#if allPassed}
       &nbsp;— all checks passed
     {/if}
   </div>
 
-  {#each result.files as fileResult}
+  {#each result.files as fileResult (fileResult.fileName)}
     <CheckRow {fileResult} {checks} />
   {/each}
 </section>

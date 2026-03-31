@@ -1,4 +1,4 @@
-import type { AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
+import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 
 export interface ColumnStats {
   distinctCount: number;
@@ -53,12 +53,8 @@ FROM data
     distinctCount: Number(row.distinct_count),
     // Arrow list columns may contain BigInt values — map to plain strings so
     // JSON.stringify on the resulting arrays is always safe.
-    distinctValues: Array.from(
-      (row.distinct_values as Iterable<unknown>) ?? [],
-    ).map(String),
+    distinctValues: Array.from((row.distinct_values as Iterable<unknown>) ?? []).map(String),
     nullCount: Number(row.null_count),
-    badFormat: Array.from((row.bad_format as Iterable<unknown>) ?? []).map(
-      String,
-    ),
+    badFormat: Array.from((row.bad_format as Iterable<unknown>) ?? []).map(String),
   };
 }
