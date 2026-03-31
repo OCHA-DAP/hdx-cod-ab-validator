@@ -5,7 +5,7 @@
   import type { DatasetResult } from '$lib/runner';
   import { runValidation } from '$lib/runner';
   import { marked } from 'marked';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import overviewMd from '../../specs/boundaries.md?raw';
 
   // Eagerly load all boundary source files. Adding/removing/reordering only
@@ -97,10 +97,18 @@
     }
   });
 
-  let canRun = $derived(duckdbState.ready && files.length > 0 && !running);
   let activeTabHtml = $derived(
     marked(stripFrontmatter(specTabs.find((t) => t.id === activeTab)?.md ?? '')) as string,
   );
+
+  $effect(() => {
+    const f = files;
+    if (f.length > 0 && duckdbState.ready) {
+      untrack(() => {
+        if (!running) handleRun();
+      });
+    }
+  });
 
   async function handleRun() {
     const { db, conn } = duckdbState;
@@ -178,12 +186,8 @@
 
   <FileUpload bind:files disabled={!duckdbState.ready} />
 
-  <button onclick={handleRun} disabled={!canRun} class="run-button">
-    {running ? 'Running…' : 'Validate'}
-  </button>
-
   {#if running}
-    <p class="status">Running checks…</p>
+    <p class="status">Running checks<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
   {/if}
 
   {#if runError}
@@ -191,7 +195,9 @@
   {/if}
 
   {#if result}
-    <ResultsReport {result} />
+    <div class="results-wide">
+      <ResultsReport {result} />
+    </div>
   {/if}
 </main>
 
@@ -205,6 +211,10 @@
   }
   header {
     margin-bottom: 2rem;
+  }
+  .results-wide {
+    width: 960px;
+    margin-left: calc((960px - 720px) / -2);
   }
   h1 {
     margin: 0 0 0.5rem;
@@ -247,28 +257,24 @@
     font-size: 0.9rem;
     margin: 0.5rem 0;
   }
+  .dots span {
+    animation: blink 1.2s infinite;
+    opacity: 0;
+  }
+  .dots span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .dots span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
   .error {
     color: #b91c1c;
     font-size: 0.9rem;
     margin: 0.5rem 0;
-  }
-  .run-button {
-    padding: 0.45rem 1.25rem;
-    background: #1d4ed8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 0.25rem;
-  }
-  .run-button:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-  }
-  .run-button:not(:disabled):hover {
-    background: #1e40af;
   }
   .spec-button {
     margin-top: 0.5rem;
