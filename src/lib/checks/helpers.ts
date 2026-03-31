@@ -1,5 +1,18 @@
 import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 
+/**
+ * Return all adm{L}_pcode columns present in `columns`, sorted by level ascending.
+ */
+export function getPcodeColumns(columns: string[]): Array<{ level: number; col: string }> {
+  return columns
+    .map((col) => {
+      const m = col.match(/^adm(\d+)_pcode$/);
+      return m ? { level: Number(m[1]), col } : null;
+    })
+    .filter((x): x is { level: number; col: string } => x !== null)
+    .sort((a, b) => a.level - b.level);
+}
+
 export interface ColumnStats {
   distinctCount: number;
   distinctValues: string[];

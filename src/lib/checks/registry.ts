@@ -1,5 +1,7 @@
 import { checkDates } from './check_dates.ts';
 import { checkGeometry } from './check_geometry.ts';
+import { checkPcodeFormat } from './check_pcode_format.ts';
+import { checkPcodeRefs } from './check_pcode_refs.ts';
 import { checkPolygon } from './check_polygon.ts';
 import { checkTopology } from './check_topology.ts';
 import { checkVersions } from './check_versions.ts';
@@ -19,4 +21,6 @@ export const checks: Check[] = [
   checkTopology,
   checkVersions,
   checkDates,
+  checkPcodeFormat,
+  checkPcodeRefs,
 ];
