@@ -1,5 +1,5 @@
 import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
-import { findGeomColumn } from './check_geometry.ts';
+import { findGeomColumn } from './check-geometry.ts';
 import type { Check, CheckResult } from './types.ts';
 
 async function run(conn: AsyncDuckDBConnection, _columns: string[]): Promise<CheckResult> {

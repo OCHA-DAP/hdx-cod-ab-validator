@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { IssueFeature } from './mapUtils';
+  import type { IssueFeature } from './map-utils';
 
   let { features, onZoom }: { features: IssueFeature[]; onZoom: (f: IssueFeature) => void } =
     $props();

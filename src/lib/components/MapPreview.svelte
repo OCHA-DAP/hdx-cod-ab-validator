@@ -4,8 +4,8 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { onDestroy, onMount } from 'svelte';
   import IssuesTable from './IssuesTable.svelte';
-  import { setupHoverTooltip } from './mapInteractions';
-  import { featureBounds, parseOverlayFeatures } from './mapUtils';
+  import { setupHoverTooltip } from './map-interactions';
+  import { featureBounds, parseOverlayFeatures } from './map-utils';
 
   let { preview, overlays = [] }: { preview: PreviewData; overlays?: string[] } = $props();
 

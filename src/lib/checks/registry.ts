@@ -1,10 +1,10 @@
-import { checkDates } from './check_dates.ts';
-import { checkGeometry } from './check_geometry.ts';
-import { checkPcodeFormat } from './check_pcode_format.ts';
-import { checkPcodeRefs } from './check_pcode_refs.ts';
-import { checkPolygon } from './check_polygon.ts';
-import { checkTopology } from './check_topology.ts';
-import { checkVersions } from './check_versions.ts';
+import { checkDates } from './check-dates.ts';
+import { checkGeometry } from './check-geometry.ts';
+import { checkPcodeFormat } from './check-pcode-format.ts';
+import { checkPcodeRefs } from './check-pcode-refs.ts';
+import { checkPolygon } from './check-polygon.ts';
+import { checkTopology } from './check-topology.ts';
+import { checkVersions } from './check-versions.ts';
 import type { Check } from './types.ts';
 
 /**
