@@ -204,19 +204,19 @@
     color: #111;
   }
   header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
   h1 {
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.5rem;
     font-size: 1.6rem;
   }
   .subtitle {
-    margin: 0;
+    margin: 0 0 1rem;
     color: #6b7280;
     font-size: 0.95rem;
   }
   .llm-hint {
-    margin: 0.35rem 0 0;
+    margin: 0 0 1rem;
     color: #6b7280;
     font-size: 0.85rem;
   }
