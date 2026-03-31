@@ -108,9 +108,9 @@ The sections below are the authoritative spec for the COD-AB format. Use them as
 
 Version: 0.1.0-draft
 
-Each admin boundary file represents one administrative level for one country version. Every row in the file is a single administrative unit (polygon) at that level.
+Each admin boundary file represents one administrative level for one country version. Every row in the file is a single administrative unit (polygon) at that level. The lowest-level file is the authoritative source for names and p-codes; all higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level.
 
-A valid COD-AB MUST include at least one subnational layer (Admin 1 or below). A dataset containing only an Admin 0 layer is not a valid COD-AB.
+A valid COD-AB MUST include at least one subnational layer (Admin 1 or below); a dataset containing only an Admin 0 layer is not valid.
 
 #### Non-Standard Columns
 
@@ -120,18 +120,14 @@ Datasets MAY include additional columns not defined in this specification (e.g.,
 
 Columns SHOULD appear in the following order within each file:
 
-1. `adm{N}_name`, `adm{N}_name1`, `adm{N}_name2`, `adm{N}_name3`, `adm{N}_pcode` (current level, descending from N to 0)
-2. Ancestor name and p-code columns (level N-1 down to 0)
+1. Current-level columns: `adm{N}_name`, `adm{N}_name1`, `adm{N}_name2`, `adm{N}_name3`, `adm{N}_pcode`
+2. Ancestor columns: name and p-code columns for each level from N−1 down to 0
 3. `valid_on`, `valid_to`
 4. `area_sqkm`, `version` (or `cod_version`)
 5. `lang`, `lang1`, `lang2`, `lang3`
 6. `adm{N}_ref_name` (if present)
 7. `iso2`, `iso3` (admin 0 only)
 8. `center_lat`, `center_lon`
-
-#### Cross-Layer Consistency
-
-The lowest-level file is the authoritative source for names and p-codes. All higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level.
 
 #### Known Deviations in Current Data
 
@@ -144,35 +140,36 @@ The lowest-level file is the authoritative source for names and p-codes. All hig
 
 #### Example Column Set
 
-For an admin level 2 file with English primary and Dari secondary language:
+For an admin level 2 file with English primary, Sinhala secondary, and Tamil tertiary language (Sri Lanka, `lka_admin2`):
 
 ```text
 adm2_name         (string, primary name in English)
-adm2_name1        (string, name in Dari, nullable)
-adm2_name2        (string, nullable)
+adm2_name1        (string, name in Sinhala, nullable)
+adm2_name2        (string, name in Tamil, nullable)
 adm2_name3        (string, nullable)
-adm2_pcode        (string, e.g. "AF1113")
+adm2_pcode        (string, e.g. "LK11")
 adm1_name         (string, parent admin 1 name)
 adm1_name1        (string, nullable)
 adm1_name2        (string, nullable)
 adm1_name3        (string, nullable)
-adm1_pcode        (string, e.g. "AF11")
+adm1_pcode        (string, e.g. "LK1")
 adm0_name         (string, country name)
 adm0_name1        (string, nullable)
 adm0_name2        (string, nullable)
 adm0_name3        (string, nullable)
-adm0_pcode        (string, e.g. "AF")
-valid_on          (timestamp with timezone)
-valid_to          (timestamp with timezone, nullable)
+adm0_pcode        (string, e.g. "LK")
+valid_on          (date)
+valid_to          (date, nullable)
 area_sqkm         (double)
-version           (string, e.g. "v01")
+version           (string, e.g. "v03")
 lang              (string, e.g. "en")
-lang1             (string, e.g. "da", nullable)
-lang2             (string, nullable)
+lang1             (string, e.g. "si", nullable)
+lang2             (string, e.g. "ta", nullable)
 lang3             (string, nullable)
-adm2_ref_name     (string, nullable)
 center_lat        (double)
 center_lon        (double)
+geometry          (geometry)
+geometry_bbox     (struct(xmin float, ymin float, xmax float, ymax float))
 ```
 
 ---
