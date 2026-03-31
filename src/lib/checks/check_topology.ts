@@ -144,6 +144,6 @@ export const checkTopology: Check = {
   name: 'check_topology',
   label: 'Topology',
   specSection: 'Topology',
-  appliesTo: ['all'],
+  appliesTo: ['admin', 'lines'],
   run,
 };

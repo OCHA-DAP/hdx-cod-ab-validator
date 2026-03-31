@@ -22,15 +22,28 @@ export interface DatasetResult {
   files: FileResult[];
 }
 
+// Infer the layer type from the layer name for appliesTo filtering.
+function inferLayerType(layerName: string): 'admin' | 'lines' | 'points' | null {
+  if (/_adm(in)?\d/i.test(layerName)) return 'admin';
+  if (/_(adminlines?|lines?|lin)\b/i.test(layerName)) return 'lines';
+  if (/_(adminpoints?|points?|pts?)\b/i.test(layerName)) return 'points';
+  return null;
+}
+
 async function runChecksAndPreview(
   conn: AsyncDuckDBConnection,
   columns: string[],
+  layerName: string,
 ): Promise<{
   checks: Record<string, CheckResult>;
   preview: PreviewData | null;
 }> {
+  const layerType = inferLayerType(layerName);
   const checkResults: Record<string, CheckResult> = {};
   for (const check of checks) {
+    if (!check.appliesTo.includes('all') && (layerType === null || !check.appliesTo.includes(layerType))) {
+      continue;
+    }
     checkResults[check.name] = await check.run(conn, columns);
   }
   const preview = await buildPreviewData(conn);
@@ -117,7 +130,7 @@ async function processLayers(filePath: string, conn: AsyncDuckDBConnection): Pro
     };
     try {
       const { columns } = await loadSpatialLayer(filePath, layerName, conn);
-      const outcome = await runChecksAndPreview(conn, columns);
+      const outcome = await runChecksAndPreview(conn, columns, layerName);
       fileResult.checks = outcome.checks;
       fileResult.preview = outcome.preview;
     } catch (e) {
@@ -156,7 +169,7 @@ export async function runValidation(
       };
       try {
         const { columns } = await loadParquet(file, db, conn);
-        const outcome = await runChecksAndPreview(conn, columns);
+        const outcome = await runChecksAndPreview(conn, columns, file.name.replace(/\.[^.]+$/, ''));
         fileResult.checks = outcome.checks;
         fileResult.preview = outcome.preview;
       } catch (e) {

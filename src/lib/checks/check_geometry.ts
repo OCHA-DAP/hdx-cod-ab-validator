@@ -1,7 +1,7 @@
 import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 import type { Check, CheckResult } from './types.ts';
 
-async function findGeomColumn(conn: AsyncDuckDBConnection): Promise<string | null> {
+export async function findGeomColumn(conn: AsyncDuckDBConnection): Promise<string | null> {
   const desc = await conn.query('DESCRIBE data');
   const cols = desc.toArray() as Array<{
     column_name: string;
@@ -46,29 +46,7 @@ async function run(conn: AsyncDuckDBConnection, _columns: string[]): Promise<Che
     );
   }
 
-  // ── 2. Geometry type ──────────────────────────────────────────────────────
-  const typeResult = await conn.query(`
-    SELECT ST_GeometryType(${q})::VARCHAR AS geom_type, COUNT(*) AS cnt
-    FROM data
-    WHERE ${q} IS NOT NULL
-    GROUP BY geom_type
-    ORDER BY geom_type
-  `);
-  const typeCounts = typeResult.toArray() as Array<{
-    geom_type: string;
-    cnt: bigint;
-  }>;
-  const badTypes = typeCounts.filter(
-    (r) => r.geom_type !== 'POLYGON' && r.geom_type !== 'MULTIPOLYGON',
-  );
-  if (badTypes.length > 0) {
-    const listed = badTypes.map((r) => `${r.geom_type} (${r.cnt})`).join(', ');
-    violations.push(
-      `Non-polygon geometry types found: ${listed}. All geometries MUST be of type Polygon or MultiPolygon.`,
-    );
-  }
-
-  // ── 3. Geometry validity ──────────────────────────────────────────────────
+  // ── 2. Geometry validity ──────────────────────────────────────────────────
   const validResult = await conn.query(`
     SELECT COUNT(*) FILTER (WHERE NOT ST_IsValid(${q})) AS invalid_count
     FROM data
@@ -83,7 +61,7 @@ async function run(conn: AsyncDuckDBConnection, _columns: string[]): Promise<Che
     );
   }
 
-  // ── 4. CRS / SRID ────────────────────────────────────────────────────────
+  // ── 3. CRS / SRID ────────────────────────────────────────────────────────
   // ST_SRID is unavailable in DuckDB-WASM; use coordinate-range heuristic.
   const bboxResult = await conn.query(`
     SELECT

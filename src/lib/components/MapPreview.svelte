@@ -49,7 +49,7 @@
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#f3f4f6' },
+            paint: { 'background-color': '#ffffff' },
           },
         ],
       },

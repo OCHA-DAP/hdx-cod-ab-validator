@@ -1,6 +1,6 @@
 import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
-import type { Check, CheckResult } from './types.ts';
 import { queryColumnStats } from './helpers.ts';
+import type { Check, CheckResult } from './types.ts';
 
 async function run(conn: AsyncDuckDBConnection, columns: string[]): Promise<CheckResult> {
   const violations: string[] = [];
@@ -61,7 +61,7 @@ async function run(conn: AsyncDuckDBConnection, columns: string[]): Promise<Chec
 
 export const checkDates: Check = {
   name: 'check_dates',
-  label: 'Date Columns',
+  label: 'Dates',
   specSection: 'Date Columns',
   appliesTo: ['all'],
   run,
