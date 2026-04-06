@@ -30,6 +30,20 @@ Name values within a dataset MUST be internally consistent in style. The followi
 - **Consistent use of abbreviated vs. full forms.** Within a single name column, all names MUST use either the abbreviated form or the full form of a descriptor — not a mixture. For example, if `Special` is used in one name, `SP` MUST NOT appear in another (e.g., all rows should use `Special Administrative Region` or all should use `SAR`, not a mix). Abbreviations that are part of the official name of a unit (i.e., the full official name contains the abbreviation) are permitted.
 - **Consistent script and encoding.** All values within a single name column MUST be in the script and encoding appropriate for the declared language (`lang`, `lang1`, etc.) and MUST be consistently encoded throughout the file (e.g., no mixing of Latin and non-Latin scripts within the same column). Each individual name value MUST contain only characters from the Unicode block(s) appropriate for the declared language. Validators SHOULD flag values containing characters outside the expected block(s) as violations.
 
+### Name Verification Against Official Sources
+
+When validating a dataset, the validator SHOULD use web search to verify that name values match official sources for the country in question. This check applies to all admin levels present in the file.
+
+**For admin 1 (province/state) names**, the primary reference is the ISO 3166-2 subdivision list for the country (e.g. `https://en.wikipedia.org/wiki/ISO_3166-2:CD`). The validator MUST check:
+
+- **Accents and diacritics** — missing or spurious diacritical marks are violations (e.g. `Equateur` instead of `Équateur`, `Bas-Uele` instead of `Bas-Uélé`, `Maï-Ndombe` instead of `Mai-Ndombe`).
+- **Word separators** — hyphens vs. spaces must match the official form (e.g. `Kongo-Central` instead of `Kongo Central`).
+- **Spelling** — names must match the official ISO 3166-2 spelling exactly for the declared language.
+
+**For admin 2 and below**, the validator SHOULD cross-reference the Wikipedia page for the country's administrative subdivisions (e.g. the "Territories of the Democratic Republic of the Congo") or equivalent official government source, and flag any name that differs in spelling, accents, or punctuation from the reference list.
+
+Where an official name is ambiguous (e.g. a territory known by both its administrative center name and its official territory name), the validator SHOULD flag this as a warning and ask the user to confirm against the source data.
+
 ### Name Uniqueness and Consistency
 
 The name columns collectively form a unique identifier for each row: the concatenation of names across all levels (e.g. `adm0_name` + `adm1_name` + `adm2_name`) must uniquely identify each unit. This is enforced at each level independently via the two rules below, which together guarantee uniqueness of the full name path by transitivity. Each unit at level L is identified by its `adm{L}_pcode`. These checks apply to every level L present in the file. Null name values are excluded from both checks.
@@ -38,6 +52,7 @@ Two requirements apply to every level L present in the file:
 
 - **No duplicate names within a parent**: No two child units with the same parent (`adm{L-1}_pcode`) may have the same value in any name column (`adm{L}_name`, `adm{L}_name1`, `adm{L}_name2`, `adm{L}_name3`). This catches two different areas that have been given the same name.
 - **No name variation for the same P-code**: Every row carrying the same `adm{L}_pcode` MUST use the same value in each name column. This catches the same area named inconsistently across rows (e.g. a typo or variant spelling).
+- **Cross-layer consistency**: Name values for a given unit MUST be identical across all layers in which that unit appears. For example, the `adm2_name` values in the Admin 3 layer MUST exactly match those in the Admin 2 layer. Divergence indicates that layers were not derived from a common source.
 
 ## Admin 0 Country Name
 

@@ -1,6 +1,6 @@
 export const prerender = true;
 
-import boundariesRaw from '../../../specs/boundaries.md?raw';
+import boundariesRaw from '../../../specs/boundaries/README.md?raw';
 
 const specModules = import.meta.glob('../../../specs/**/*.md', {
   query: '?raw',
@@ -22,7 +22,10 @@ function parseSources(md: string): string[] {
 export function GET() {
   const sources = parseSources(boundariesRaw);
 
-  const sections = [boundariesRaw, ...sources.map((src) => specModules[`../../../${src}`] ?? '')]
+  const sections = [boundariesRaw, ...sources.map((src) => {
+    const resolvedSrc = src.includes('/') ? src : `specs/boundaries/${src}`;
+    return specModules[`../../../${resolvedSrc}`] ?? '';
+  })]
     .filter(Boolean)
     .map((raw) => stripFrontmatter(raw).trimStart())
     .join('\n\n---\n\n');

@@ -22,4 +22,6 @@ Point representations of administrative units (e.g. label points). Schema varies
 
 ## Admin Capitals (`{iso3}_admincapitals`)
 
-Point locations of administrative capital cities. Schema varies by country and is not yet standardized.
+Point locations of administrative capital cities. These are real-world populated places (government seats), not geometric centroids. Schema varies by country and is not yet standardized.
+
+ADM1 capitals MUST be present. ADM2 capitals SHOULD be present. Lower levels are OPTIONAL.

@@ -7,10 +7,10 @@
   import { marked } from 'marked';
   import { base } from '$app/paths';
   import { onMount, untrack } from 'svelte';
-  import overviewMd from '../../specs/boundaries.md?raw';
+  import overviewMd from '../../specs/boundaries/README.md?raw';
 
   // Eagerly load all boundary source files. Adding/removing/reordering only
-  // requires editing the `sources` list in specs/boundaries.md frontmatter.
+  // requires editing the `sources` list in specs/boundaries/README.md frontmatter.
   const sourceModules = import.meta.glob('../../specs/boundaries/*.md', {
     query: '?raw',
     import: 'default',
@@ -34,7 +34,8 @@
       const filename = srcPath.split('/').pop()!;
       const id = filename.replace('.md', '');
       const label = id.charAt(0).toUpperCase() + id.slice(1);
-      const md = sourceModules[`../../${srcPath}`] ?? '';
+      const resolvedPath = srcPath.includes('/') ? srcPath : `specs/boundaries/${srcPath}`;
+    const md = sourceModules[`../../${resolvedPath}`] ?? '';
       return { id, label, md };
     }),
   ];

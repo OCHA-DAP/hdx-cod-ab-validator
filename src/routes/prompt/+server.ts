@@ -1,7 +1,7 @@
 export const prerender = true;
 
 import promptRaw from '../../../specs/prompt.md?raw';
-import boundariesRaw from '../../../specs/boundaries.md?raw';
+import boundariesRaw from '../../../specs/boundaries/README.md?raw';
 
 const specModules = import.meta.glob('../../../specs/**/*.md', {
   query: '?raw',
@@ -24,7 +24,10 @@ export function GET() {
   const preamble = stripFrontmatter(promptRaw).trimStart();
   const sources = parseSources(boundariesRaw);
 
-  const specSection = [boundariesRaw, ...sources.map((src) => specModules[`../../../${src}`] ?? '')]
+  const specSection = [boundariesRaw, ...sources.map((src) => {
+    const resolvedPath = src.includes('/') ? src : `specs/boundaries/${src}`;
+    return specModules[`../../../${resolvedPath}`] ?? '';
+  })]
     .filter(Boolean)
     .map((raw) => stripFrontmatter(raw).trimStart())
     .join('\n\n---\n\n');

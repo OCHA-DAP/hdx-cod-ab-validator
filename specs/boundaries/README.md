@@ -1,13 +1,12 @@
 ---
 version: 0.1.0-draft
-referenced_by: validator.md
 sources:
-  - specs/boundaries/names.md
-  - specs/boundaries/codes.md
-  - specs/boundaries/versions.md
-  - specs/boundaries/attributes.md
-  - specs/boundaries/geometry.md
-  - specs/boundaries/legacy.md
+  - names.md
+  - codes.md
+  - versions.md
+  - attributes.md
+  - geometry.md
+  - legacy.md
 ---
 
 # COD-AB Specification
@@ -18,9 +17,22 @@ COD-ABs are maintained on a country-by-country basis, versioned over time, and c
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
+## Administrative Levels
+
+| Level          | Typical concept         | Required     |
+| -------------- | ----------------------- | ------------ |
+| Admin 0 (ADM0) | Country / Territory     | Yes          |
+| Admin 1 (ADM1) | Province, Region, State | Yes          |
+| Admin 2 (ADM2) | District, Department    | If available |
+| Admin 3 (ADM3) | Sub-district, County    | If available |
+| Admin 4 (ADM4) | Ward, Sub-county        | If available |
+| Admin 5 (ADM5) | Village, Locality       | If available |
+
+Admin levels MUST be contiguous: if level N is present, levels 0 through N−1 MUST also be present. The local concept name for each level (e.g. "Province", "District") varies by country and is recorded in the dataset metadata.
+
 ## Admin Boundary Layers (`{iso3}_admin{N}`)
 
-Each admin boundary file represents one administrative level for one country version. Every row in the file is a single administrative unit (polygon) at that level. The lowest-level file is the authoritative source for names and p-codes; all higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level.
+Each admin boundary file represents one administrative level for one country version. Every row in the file is a single administrative unit (polygon) at that level. The lowest-level file is the authoritative source for names and p-codes; all higher-level files MUST be derived from it by selecting the distinct combinations of name and p-code columns for the relevant level. Higher-level geometries MUST be derived by dissolving the lowest-level polygons on the parent p-code — this is the only method that guarantees coincident boundaries across layers.
 
 ### Column Order
 

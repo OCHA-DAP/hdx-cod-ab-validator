@@ -57,6 +57,10 @@ For example, Uganda (`UG`) has 4 administrative regions at admin 1, and the maxi
 
 Admin 3 and admin 4 both use two digits here because no parent at either level contains more than 99 child units.
 
+### Text Representation
+
+When writing p-codes in prose or documentation, the RECOMMENDED convention is to enclose the p-code in square brackets and the place name in quotation marks, e.g. `"Medellín" [CO05001]`. This makes p-codes visually distinct from surrounding text and unambiguous when names and codes appear together.
+
 ### Continuity Across Versions
 
 P-codes SHOULD remain stable across dataset versions. When a government introduces a substantially new boundary system, p-codes SHOULD follow the new system even if continuity is broken. A retired P-code SHOULD NOT be reused for a different administrative unit.
