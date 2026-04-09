@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import FileUpload from '$lib/components/FileUpload.svelte';
   import ResultsReport from '$lib/components/ResultsReport.svelte';
   import { duckdbState } from '$lib/db/duckdb.svelte';
   import type { DatasetResult } from '$lib/runner';
   import { runValidation } from '$lib/runner';
   import { marked } from 'marked';
-  import { base } from '$app/paths';
   import { onMount, untrack } from 'svelte';
   import overviewMd from '../../specs/boundaries/README.md?raw';
 
@@ -35,7 +35,7 @@
       const id = filename.replace('.md', '');
       const label = id.charAt(0).toUpperCase() + id.slice(1);
       const resolvedPath = srcPath.includes('/') ? srcPath : `specs/boundaries/${srcPath}`;
-    const md = sourceModules[`../../${resolvedPath}`] ?? '';
+      const md = sourceModules[`../../${resolvedPath}`] ?? '';
       return { id, label, md };
     }),
   ];
@@ -130,7 +130,7 @@
 
 <main>
   <header>
-    <h1>COD-AB Data Validator</h1>
+    <h1>COD-AB Specification & Validator</h1>
     <p class="subtitle">
       Validate UN OCHA administrative boundary files against the COD-AB specification — directly in
       your browser. No account, no upload, no server. Your files stay on your machine.
@@ -189,7 +189,9 @@
   <FileUpload bind:files disabled={!duckdbState.ready} />
 
   {#if running}
-    <p class="status">Running checks<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>
+    <p class="status">
+      Running checks<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+    </p>
   {/if}
 
   {#if runError}
@@ -270,8 +272,14 @@
     animation-delay: 0.4s;
   }
   @keyframes blink {
-    0%, 80%, 100% { opacity: 0; }
-    40% { opacity: 1; }
+    0%,
+    80%,
+    100% {
+      opacity: 0;
+    }
+    40% {
+      opacity: 1;
+    }
   }
   .error {
     color: #b91c1c;

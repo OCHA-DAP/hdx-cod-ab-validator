@@ -1,4 +1,4 @@
-# COD-AB Validator
+# COD-AB Specification & Validator
 
 Validate UN OCHA administrative boundary files against the COD-AB specification — directly in your browser. No account, no upload, no server. Your files stay on your machine.
 
@@ -21,13 +21,13 @@ Validate UN OCHA administrative boundary files against the COD-AB specification 
 
 ## What gets checked
 
-| Check | What it looks for |
-| --- | --- |
-| **Geometry** | Null or empty geometries; invalid geometries (self-intersections, unclosed rings); coordinates outside WGS 84 bounds |
-| **Polygon type** | All features must be polygons or multipolygons (no points or lines) |
-| **Topology** | Overlapping polygons; gaps (slivers) between adjacent polygons |
-| **Version** | `version` column present; consistent across all rows; correct format (`v01`, `v02.01`, etc.) |
-| **Dates** | `valid_on` and `valid_to` columns present and consistent; flags retired datasets |
+| Check            | What it looks for                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Geometry**     | Null or empty geometries; invalid geometries (self-intersections, unclosed rings); coordinates outside WGS 84 bounds |
+| **Polygon type** | All features must be polygons or multipolygons (no points or lines)                                                  |
+| **Topology**     | Overlapping polygons; gaps (slivers) between adjacent polygons                                                       |
+| **Version**      | `version` column present; consistent across all rows; correct format (`v01`, `v02.01`, etc.)                         |
+| **Dates**        | `valid_on` and `valid_to` columns present and consistent; flags retired datasets                                     |
 
 Results include an interactive map preview with overlapping areas and gaps highlighted.
 

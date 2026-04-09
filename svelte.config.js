@@ -17,7 +17,7 @@ const config = {
       fallback: 'index.html',
     }),
     paths: {
-      base: process.env.NODE_ENV === 'production' ? '/hdx-cod-ab-validator' : '',
+      base: process.env.NODE_ENV === 'production' ? '/hdx-cod-ab-spec' : '',
     },
   },
 };

@@ -1,4 +1,4 @@
-# COD-AB Validator
+# COD-AB Specification & Validator
 
 A browser-based validation tool for UN OCHA COD-AB (Common Operational Dataset – Administrative Boundaries) files. All validation runs client-side via DuckDB-WASM — no server required.
 
