@@ -1,4 +1,4 @@
-import { relative, sep } from 'node:path';
+import { relative, sep } from "node:path";
 
 /** @type {import('@sveltejs/vite-plugin-svelte').SvelteConfig} */
 const config = {
@@ -8,7 +8,7 @@ const config = {
     runes: ({ filename }) => {
       const relativePath = relative(import.meta.dirname, filename);
       const pathSegments = relativePath.toLowerCase().split(sep);
-      return pathSegments.includes('node_modules') ? undefined : true;
+      return pathSegments.includes("node_modules") ? undefined : true;
     },
   },
 };
