@@ -1,7 +1,6 @@
 ---
 import { marked } from "marked";
 import CopyPromptButton from "../lib/components/CopyPromptButton.svelte";
-import SpecViewer from "../lib/components/SpecViewer.svelte";
 import Validator from "../lib/components/Validator.svelte";
 
 const sourceModules = import.meta.glob("/specs/boundaries/*.md", {
@@ -34,6 +33,7 @@ const specTabs = [
     return { id, label, html: marked(stripFrontmatter(md)) as string };
   }),
 ];
+
 ---
 
 <!doctype html>
@@ -41,12 +41,12 @@ const specTabs = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COD-AB Data Validator</title>
+    <title>COD-AB Specification & Validator</title>
   </head>
   <body>
     <main>
       <header>
-        <h1>COD-AB Data Validator</h1>
+        <h1>COD-AB Specification & Validator</h1>
         <p class="subtitle">
           Validate UN OCHA administrative boundary files against the COD-AB specification — directly
           in your browser. No account, no upload, no server. Your files stay on your machine.
@@ -55,9 +55,56 @@ const specTabs = [
           To validate with an LLM: <CopyPromptButton client:idle /> then paste it into your LLM of choice.
         </p>
       </header>
-      <SpecViewer specTabs={specTabs} client:load />
+
+      <details class="spec-details" open>
+        <summary class="spec-toggle">
+          <span class="when-open">Hide specification</span>
+          <span class="when-closed">View specification</span>
+        </summary>
+        <section class="spec">
+          <nav class="spec-tabs">
+            {
+              specTabs.map((tab) => (
+                <a href={`#spec-${tab.id}`} class="spec-tab" data-tab={tab.id}>
+                  {tab.label}
+                </a>
+              ))
+            }
+          </nav>
+          <div class="spec-content">
+            {
+              specTabs.map((tab) => (
+                <div id={`spec-${tab.id}`} class="tab-panel" set:html={tab.html} />
+              ))
+            }
+          </div>
+        </section>
+      </details>
+
       <Validator client:only="svelte" />
     </main>
+
+    <script>
+      const panels = Array.from(document.querySelectorAll<HTMLElement>(".tab-panel"));
+      const tabs = Array.from(document.querySelectorAll<HTMLElement>(".spec-tab"));
+      const ids = panels.map((p) => p.id.replace("spec-", ""));
+
+      function activate(id: string) {
+        panels.forEach((p) => p.classList.toggle("active", p.id === "spec-" + id));
+        tabs.forEach((a) => a.classList.toggle("active", (a as HTMLElement).dataset.tab === id));
+      }
+
+      const hash = location.hash.replace("#spec-", "");
+      activate(ids.includes(hash) ? hash : ids[0]);
+
+      document.querySelector(".spec-tabs")?.addEventListener("click", (e) => {
+        const a = (e.target as Element).closest<HTMLElement>(".spec-tab");
+        if (!a) return;
+        e.preventDefault();
+        history.pushState(null, "", "#spec-" + a.dataset.tab);
+        activate(a.dataset.tab!);
+      });
+    </script>
   </body>
 </html>
 
@@ -85,5 +132,164 @@ const specTabs = [
     margin: 0 0 1rem;
     color: #6b7280;
     font-size: 0.85rem;
+  }
+
+  /* ── Spec toggle (details/summary) ── */
+  .spec-details {
+    margin-top: 0.5rem;
+  }
+  .spec-details > summary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: #1d4ed8;
+    border: 1px solid #1d4ed8;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    list-style: none;
+    transition:
+      background 0.1s,
+      color 0.1s,
+      border-color 0.1s;
+  }
+  .spec-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .spec-details > summary:hover {
+    background: #1e40af;
+    border-color: #1e40af;
+  }
+  .spec-details:not([open]) > summary {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #374151;
+    font-weight: normal;
+  }
+  .spec-details:not([open]) > summary:hover {
+    background: #e5e7eb;
+  }
+  .when-open {
+    display: inline;
+  }
+  .when-closed {
+    display: none;
+  }
+  .spec-details:not([open]) .when-open {
+    display: none;
+  }
+  .spec-details:not([open]) .when-closed {
+    display: inline;
+  }
+
+  /* ── Spec section shell ── */
+  .spec {
+    margin: 1.25rem 0;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  /* ── Tab nav ── */
+  .spec-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .spec-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .spec-tab {
+    display: block;
+    padding: 0.5rem 0.875rem;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.85rem;
+    color: #6b7280;
+    white-space: nowrap;
+    margin-bottom: -1px;
+  }
+  .spec-tab:hover {
+    color: #111;
+  }
+
+  /* Active tab link */
+  .spec-tab.active {
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
+    font-weight: 600;
+  }
+
+  /* ── Tab panels ── */
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+
+  /* ── Spec content typography ── */
+  .spec-content {
+    padding: 1.25rem 1.5rem;
+  }
+  .spec-content :global(h1) {
+    font-size: 1.3rem;
+    margin: 0 0 0.75rem;
+  }
+  .spec-content :global(h2) {
+    font-size: 1.05rem;
+    margin: 1.25rem 0 0.4rem;
+  }
+  .spec-content :global(h3) {
+    font-size: 0.95rem;
+    margin: 1rem 0 0.3rem;
+  }
+  .spec-content :global(p) {
+    margin: 0.4rem 0;
+  }
+  .spec-content :global(ul),
+  .spec-content :global(ol) {
+    margin: 0.4rem 0;
+    padding-left: 1.5rem;
+  }
+  .spec-content :global(table) {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+  }
+  .spec-content :global(th),
+  .spec-content :global(td) {
+    border: 1px solid #d1d5db;
+    padding: 0.35rem 0.6rem;
+    text-align: left;
+  }
+  .spec-content :global(th) {
+    background: #e5e7eb;
+  }
+  .spec-content :global(pre) {
+    background: #e5e7eb;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+  }
+  .spec-content :global(code) {
+    font-size: 0.85em;
+    background: #e5e7eb;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+  }
+  .spec-content :global(pre code) {
+    background: none;
+    padding: 0;
   }
 </style>
