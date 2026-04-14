@@ -1,5 +1,39 @@
 ---
+import { marked } from "marked";
+import CopyPromptButton from "../lib/components/CopyPromptButton.svelte";
+import SpecViewer from "../lib/components/SpecViewer.svelte";
 import Validator from "../lib/components/Validator.svelte";
+
+const sourceModules = import.meta.glob("/specs/boundaries/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const overviewMd = sourceModules["/specs/boundaries/README.md"] ?? "";
+
+function stripFrontmatter(md: string): string {
+  if (!md.startsWith("---")) return md;
+  const end = md.indexOf("\n---", 3);
+  return end === -1 ? md : md.slice(end + 4);
+}
+
+function parseSources(md: string): string[] {
+  const fm = md.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
+  return [...fm.matchAll(/^\s+-\s+(.+)$/gm)].map((m) => m[1].trim());
+}
+
+const specTabs = [
+  { id: "overview", label: "Overview", html: marked(stripFrontmatter(overviewMd)) as string },
+  ...parseSources(overviewMd).map((srcPath) => {
+    const filename = srcPath.split("/").pop()!;
+    const id = filename.replace(".md", "");
+    const label = id.charAt(0).toUpperCase() + id.slice(1);
+    const resolvedPath = srcPath.includes("/") ? srcPath : `specs/boundaries/${srcPath}`;
+    const md = sourceModules[`/${resolvedPath}`] ?? "";
+    return { id, label, html: marked(stripFrontmatter(md)) as string };
+  }),
+];
 ---
 
 <!doctype html>
@@ -10,6 +44,46 @@ import Validator from "../lib/components/Validator.svelte";
     <title>COD-AB Data Validator</title>
   </head>
   <body>
-    <Validator client:only="svelte" />
+    <main>
+      <header>
+        <h1>COD-AB Data Validator</h1>
+        <p class="subtitle">
+          Validate UN OCHA administrative boundary files against the COD-AB specification — directly
+          in your browser. No account, no upload, no server. Your files stay on your machine.
+        </p>
+        <p class="llm-hint">
+          To validate with an LLM: <CopyPromptButton client:idle /> then paste it into your LLM of choice.
+        </p>
+      </header>
+      <SpecViewer specTabs={specTabs} client:load />
+      <Validator client:only="svelte" />
+    </main>
   </body>
 </html>
+
+<style>
+  main {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    font-family: system-ui, sans-serif;
+    color: #111;
+  }
+  header {
+    margin-bottom: 2rem;
+  }
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.6rem;
+  }
+  .subtitle {
+    margin: 0 0 1rem;
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+  .llm-hint {
+    margin: 0 0 1rem;
+    color: #6b7280;
+    font-size: 0.85rem;
+  }
+</style>
